@@ -1,0 +1,83 @@
+<!--
+%\VignetteEngine{knitr::knitr}
+%\VignetteIndexEntry{Simulate estimation after blinded interim estimations}
+-->
+
+# Simulation study of the properties of point estimates and confidence intervals
+
+In the simulation study we reassessed the second stage sample size
+using the adjusted and the unadjusted variance estimate. In each stage
+we generated normally distributed test statistics for the control and
+treatment group assuming balanced allocation.
+
+
+```{r} 
+library(parallel)
+library(blindConfidence)
+library(ggplot2)
+```
+
+```{r}
+G <- expand.grid(delta=round(seq(-2,2,.2),2),sigma=round(seq(.5,3,.5),2),d = c(.2,.6,1,2), s = round(seq(.5,3,.5),2))
+```
+
+We assume that the pre-planned sample size of the trial was planned
+for a one-sided significance level $\alpha=0.025$ assuming an effect
+size $\delta=1$ and standard deviations $\hat{\sigma}$ to reach a
+target power of 80% (using the normal approximation). The first stage
+sample size $n_1$ was set to halve of the pre-planned sample size. The
+simulations were performed in R with $10^6$ simulation runs per
+scenario and the code is available as supplementary material.
+
+```{r,eval=FALSE}
+set.seed(50014056)
+runs <- 10^6
+gridsim <- t(simplify2array(mclapply(1:nrow(G),function(i) {c(G[i,],simBIA(delta=G[i,]$delta,sigma=G[i,]$sigma,d=G[i,]$d,s=G[i,]$s,runs=runs,alpha=.025,beta=.2))})))
+
+```
+```{r}
+load('gridsim_131210.Rd')
+
+
+gsim <- as.data.frame(t(apply(gridsim,1,unlist)))
+gsim <- subset(gsim,sigma>0)
+
+gsim$var.rbias <- gsim$variance.bias/gsim$sigma^2
+gsim$n1 <- ceiling(1/2*zss(gsim$s,gsim$d,.025,.2))
+gsim$bound <- upper.bias(gsim$n1,gsim$d)
+## gsim$s <- zsd(gsim$n1,gsim$d,.025,.2)
+### plot variance bias
+## reduce scenarios 
+
+dsim <- subset(gsim,sigma %in% c(.6,1.2,1.8,2.4) & delta %in% c(-1,0,1,2) & d %in% c(.5,1,2) & s > .2)
+```
+
+
+
+Figures \ref{fig:bias} and \ref{fig:sd} show the (mean) bias of the
+final estimates of the mean and standard deviation based on the total
+sample. The estimates are biased for very small first stage sample
+sizes or very large variances $\sigma$. For both sample size
+reassessment rules $n_2(\fos)$ and $n_2(S_{1,OS,\pdelta}^2)$ the bias
+of the mean is zero under the null hypothesis and has the opposite
+sign as the true effectsize, otherwise. For very large positive and
+negative effect sizes the bias is close to zero again. The latter is
+due to the fact that for large effects that blinded interim variance
+estimates are heavily positively biased leading to very large second
+stage sample sizes. As a consequence the overall estimates are
+essentially equal to the (unbiased) second stage estimates and the
+bias becomes negligible. The estimate of the variance is negatively
+biased and the bias appears to be maximised under the null
+hypothesis. For positive and negative effect sizes the bias approaches
+0 again due to the fact that the overall estimate becomes essentially
+equal to the (unbiased) second stage estimates.
+
+In general we observe that the absolute bias of mean and variance is larger when using the adjusted interim variance estimate compared to the case where the unadjusted estimate is used for sample size reassessment.
+
+Eventhough the variance estimate is negatively biased, this does not imply that the estimated standard error is biased as well [\XXX es ist wohl problematisch ueber den Bias des SE zu sprechen aus gleichen Gruenden wie ueber den Bias der SD \XXX]. This is due to the fact, that the actual standard error $\sqrt{Var(\bar \Delta)}$ is lower than $\sqrt{E(\sigma^2/n)}$ as well.
+
+Under the null hypothesis ($\delta=0$) the confidence interval has correct coverage, even for small sample sizes [Ausnahme Figure 3 2. Zeile, 2. Spalte?]. On first sight this is surprising, because the variance estimate is negatively biased, while the mean is unbiased.
+
+The coverage probabilities of the confidence intervals are shown in Figures \ref{fig:uc.coverage} and \ref{fig:coverage}. Note that the coverage probability for the upper confidence bound at a certain true effect size $\delta$ is the same as the coverage probability for the lower confidence bound at $-\delta$. For positive $\delta$ the lower confidence bound is conservative (with coverage probability larger than 0.975) while the upper bound is anti-conservative. Over a large range of $\delta$  the two-sided coverage probability (which is given by one minus the sum of the non-coverage probabilities of the lower and upper bounds) is not controlled.
+
+
