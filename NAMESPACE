@@ -1,1 +1,5 @@
-export(simBIA)
+export(lowerBound)
+export(plotSim)
+export(simVBIA)
+export(zsd)
+export(zss)

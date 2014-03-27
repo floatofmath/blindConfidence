@@ -10,6 +10,7 @@
 #' @param beta Type II error
 #' @examples
 #' zss(1,.5,.025,.2)
+#' @export
 zss <- function(s,d,alpha,beta){
   2 * s^2 / d^2 * (qnorm(alpha,lower=FALSE)+qnorm(beta,lower=FALSE))^2
 }
@@ -29,6 +30,7 @@ zss <- function(s,d,alpha,beta){
 #' @param beta Type II error probability
 #' @examples
 #' zsd(15,.5,3/4,.025,.2)
+#' @export
 zsd <- function(n1,d,v = 1/2,alpha,beta){
     n <- n1/(v*2)
     sqrt(n * d^2 / ((qnorm(alpha,lower=FALSE)+qnorm(beta,lower=FALSE))^2))
@@ -37,7 +39,7 @@ zsd <- function(n1,d,v = 1/2,alpha,beta){
 
 #' Simulate estimation after blinded interim analyses
 #'
-#' \code{simBIA} simulates \code{runs} adaptive trials with
+#' \code{simVBIA} simulates \code{runs} adaptive trials with
 #' blinded interim analysis and assesses the bias of the variance 
 #' and mean estimates. Sample size review is performed either using
 #' an interim estimate of the pooled variance that is adjusted
@@ -58,10 +60,36 @@ zsd <- function(n1,d,v = 1/2,alpha,beta){
 #' @param fulldata return full data 
 #' @param cf correction term added to the sample size rule
 #' @param ...
+#' @return If fulldata is \code{FALSE} simVBIA returns a list with
+#' the following items, summarizing the simulation results for
+#' designs with sample size reassessment based on the adjusted
+#' interim variance estimates:
+#' \item{lower.prob}{Coverage probability of the lower confidence bound}
+#' \item{upper.prob}{Coverage probability of the upper confidence bound}
+#' \item{total.prob}{Coverage probability of the two sided confidence interval}
+#' \item{mean.bias}{Bias of the mean estimate}
+#' \item{variance.bias}{Bias of the variance estimate}
+#' \item{vm.bias}{Bias of the variance of the mean estimate}
+#' \item{vm.diff}{Difference between monte carlo vm and theoretical vm}
+#' \item{root.mse}{Root mean squared error of the effect estimate}
+#' \item{mean.m1}{Mean second stage sample size}
+#' \item{low.m1}{Lower 10 percen quantile of second stage sample sizes}
+#' \item{n10}{Probability that the second stage sample size is zero}
+#' as well as results for designs with sample size reassessment
+#' based on unadjusted interim estimates:
+#' \item{uc.mean.bias}{Bias of the mean estimate}
+#' \item{uc.variance.bias}{Bias of the variance estimate}
+#' \item{uc.vm.bias}{Bias of the variance estimate}
+#' \item{uc.vm.diff}{Difference between monte carlo vm and theoretical vm}
+#' \item{uc.root.mse}{Root mean squared error of the effect estimate}
+#' \item{uc.mean.m1}{Mean second stage sample size}
+#' \item{uc.low.m1}{Lower 10 percen quantile of second stage sample sizes}
+#' \item{uc.n10}{Probability that the second stage sample size is zero}
+#' \item{tn1 = mean(n1)}
 #' @examples
-#' simBIA(.5,1,1)
+#' simVBIA(.5,1,1,runs=10^3)
 #' @export
-simBIA <- function(delta, # true effect size
+simVBIA <- function(delta, # true effect size
                    sigma, # true standard deviation
                    d, # assumed effect size
                    alpha = .025, # pre-specified alpha level
@@ -80,21 +108,37 @@ simBIA <- function(delta, # true effect size
   ## pre-compute t-distribution quantiles
   qttable=qt(1-alpha,1:1000)
   xi=(qnorm(alpha,lower=FALSE)+qnorm(beta,lower=FALSE))^2/d^2
-  n=n1+n2 # total first stage sample size
+
+  ## total first stage sample size
+  n=n1+n2 
   lamb=n1*n2/n ##???
-  # Simulation der first stage means und sum of squares
+
+  ## simulated first stage means and sum of squares
+  ## group 1
   x1=rnorm(runs,s=sigma/sqrt(n1))
+
+  ## here we also generate a second independent first stage
+  ## this is used for code testing purposes as estimates using
+  ## these values should be unbiased, and if not point to errors
+  ## in the calculation
   x1r=rnorm(runs,s=sigma/sqrt(n1))
-  
+  ## group 2
   x2=rnorm(runs,m=delta,s=sigma/sqrt(n2))
   x2r=rnorm(runs,m=delta,s=sigma/sqrt(n2))
 
+  ## sum of squares
+  ## group 1
   sq1=sigma^2*rchisq(runs,n1-1)
   sq1r=sigma^2*rchisq(runs,n1-1)
+
+  ## group 2
   sq2=sigma^2*rchisq(runs,n2-1)
   sq2r=sigma^2*rchisq(runs,n2-1)
 
   ## replace by external values
+  ## this is for test purposes where we can
+  ## enter data simulated on a patient level,
+  ## which are less prone to programming errors
   if(testdata & exists('florian')){
     x1 <- florian$x1
     x2 <- florian$x2
@@ -103,13 +147,16 @@ simBIA <- function(delta, # true effect size
   }
   diff=x1-x2
   diffr=x1r-x2r
-  # berechnung der overall standard deviation s_adj nach Kieser &Friede 2003
+  
+  # overall standard deviation s_adj following Kieser &Friede 2003
   # may become <0, we set it to zero in that case (?) check
   ps = pmax((sq1+sq2+lamb*diff*diff)/(n-1)- d^2*n1/(2*n-2),0) #check
+
+  ## without adjustment for mean guess
   psu = (sq1+sq2+lamb*diff*diff)/(n-1)
 
   ## round of errors!
-  #m1=pmax(round(2*xi*ps)-n1,0)
+  ## m1=pmax(round(2*xi*ps)-n1,0)
   m1 <- pmax(ceiling(2*xi*ps)-n1+cf,n2min)
   m1u <- pmax(ceiling(2*xi*psu)-n1+cf,n2min)
 
@@ -121,25 +168,26 @@ simBIA <- function(delta, # true effect size
   }
   m2=m1
   m2u=m1u
-  #Berechnung der secondstage means
+
+  ## secondstage means
   y1=rnorm(runs,s=sigma/sqrt(m1))
   y2=rnorm(runs,s=sigma/sqrt(m2),m=delta)
   y1u=rnorm(runs,s=sigma/sqrt(m1u))
   y2u=rnorm(runs,s=sigma/sqrt(m2u),m=delta)
   
-  # wir setzen die means auf null falls die second stage fallzahl 0 ist
+  # set the  means to zero if second stage sample size is 0 
   y1[m1<1]=0 
   y2[m2<1]=0
   y1u[m1u<1]=0 
   y2u[m2u<1]=0
   
-  # Berechnung der sum of squares second stage
+  # sum of squares for the second stage
   tq1=sigma^2*rchisq(runs,df=pmax(m1-1,1)) 
   tq2=sigma^2*rchisq(runs,df=pmax(m2-1,1))
   tq1u=sigma^2*rchisq(runs,df=pmax(m1u-1,1)) 
   tq2u=sigma^2*rchisq(runs,df=pmax(m2u-1,1))
 
-  # wir setzen diese  auf null falls die second stage fallzahl <2 ist
+  # set the  means to zero if second stage sample size is 0 
   tq1[m1<2]=0
   tq2[m2<2]=0
   tq1u[m1u<2]=0
@@ -158,18 +206,28 @@ simBIA <- function(delta, # true effect size
   }
      
   
-  # Berechnung der Overall means ond varianzen und konfidence bounds
-  # hier muesste man checken, ob die formeln auch für kleine m1,m2, das heißt m1,m2=0,1 stimmen
+  ## compute overall means
+  ## groupwise sample sizes
   l1=n1+m1
   l2=n2+m2
+
+  ## degrees of freedom
   ll=l1+l2-2
+
+  ## analogue for unadjusted interim estimates
   l1u=n1+m1u
   l2u=n2+m2u
   llu=l1u+l2u-2
-  # siehe kieser & friede 2003
-  ## t-test denominator
+
+
+
+  ## final analysis estimate of the standard deviation
   sp1=sqrt((tq1+sq1+(y1-x1)^2*n1*m1/l1+tq2+sq2+(y2-x2)^2*n2*m2/l2)/ll)
+
+  ## this is just for test purposes should be unbiased
   sp1r=sqrt((tq1+sq1r+(y1-x1r)^2*n1*m1/l1+tq2+sq2r+(y2-x2r)^2*n2*m2/l2)/ll)
+
+  ## t-test denominator (see kieser & friede 2003)
   sp=sp1*sqrt((1/l1+1/l2))
 
   sp1u=sqrt((tq1u+sq1+(y1u-x1)^2*n1*m1u/l1u+tq2u+sq2+(y2u-x2)^2*n2*m2u/l2u)/llu)
@@ -187,6 +245,10 @@ simBIA <- function(delta, # true effect size
   clu=diffmuu-baru
   cuu=diffmuu+baru
 
+  ## estimate of the true mean variance
+  vm <- var(diffmu)
+  vmu <- var(diffmuu)
+
   err=c(
       lower.prob=sum(cl>delta)/runs,
       upper.prob=sum(cu<delta)/runs,
@@ -194,7 +256,9 @@ simBIA <- function(delta, # true effect size
       mean.bias=sum(diffmu-delta)/runs,
       variance.bias=sum(sp1^2-sigma^2)/runs, #? sp^2 -1
       variance.ubias=sum(sp1r^2-sigma^2)/runs, #? sp^2 -1
-      se.bias=(sd(diffmu)-sqrt(mean(sp^2))), #? 
+      vm = vm,
+      ev = mean(sp^2), #? var(diffmu)-sem^2
+      exv =mean(sigma^2*(1/l1+1/l2)),
       root.mse=sqrt(sum((diffmu-delta)^2)/runs),
       mean.m1=median(m1),
       min.m1=unlist(quantile(m1,.01,na.rm=TRUE)),
@@ -206,7 +270,9 @@ simBIA <- function(delta, # true effect size
       uc.mean.bias=sum(diffmuu-delta)/runs,
       uc.variance.bias=sum(sp1u^2-sigma^2)/runs, #? sp^2 -1
       uc.variance.ubias=sum(sp1ur^2-sigma^2)/runs, #? sp^2 -1
-      uc.se.bias=(sd(diffmuu)-sqrt(mean(spu^2))), #? 
+      uc.vm=vmu, #?
+      uc.ev =mean(spu^2),
+      uc.exv = mean(sigma^2*(1/l1u+1/l2u)),
       uc.root.mse=sqrt(sum((diffmuu-delta)^2)/runs),
       uc.mean.m1=median(m1u),
       uc.min.m1=unlist(quantile(m1u,.01,na.rm=TRUE)),
@@ -238,6 +304,7 @@ simBIA <- function(delta, # true effect size
 #' @param beta Type II error probability
 #' @examples
 #' lowerBound(10,.5)
+#' @export
 lowerBound <- function(n1,d,alpha=.025,beta=.2){
   -(2*n1 - 1)/((2*n1 - 3)*2*(qnorm(1-alpha)+qnorm(1-beta))^2/d^2)
 }
@@ -253,8 +320,9 @@ lowerBound <- function(n1,d,alpha=.025,beta=.2){
 #' @param res the results a sequence of simulation runs along parameter \code{seq}
 #' @examples
 #' meandif <- seq(0,1,.1)
-#' simulation <- sapply(meandif,function(m) simBIA(delta=.25,sigma=2,m,runs=1000))
+#' simulation <- sapply(meandif,function(m) simVBIA(delta=.25,sigma=2,m,runs=1000))
 #' plotSim(meandif,simulation)
+#' @export
 plotSim <- function(seq,res,...){
   lb <- min(c(1,1,1/2)*res[1:3,])
   ub <- max(c(1,1,1/2)*res[1:3,])
@@ -263,3 +331,69 @@ plotSim <- function(seq,res,...){
   lines(seq,unlist(res['total.prob',])/2,type='b')
   abline(h=.025)
 }
+
+#' Expected bias of the mean differrence conditional on the observed first stage variance
+#' 
+#' \code{cond.bias} computes the expected bias of the
+#' mean difference conditional on the interim variance
+#' estimate, as shown in Theorem 2 of \cite{posch2014estimation}. 
+#'
+#' @param S1os Interim variance estimate
+#' @param n1 first stage per group sample size
+#' @param delta true difference of means
+#' @param sigma true standard deviation
+cond.bias <- function(S1os,n1,delta,sigma){
+    F1 <- function(x) dnorm(x,delta,sqrt({2*sigma^2}/n1)) * dchisq((S1os*(2*n1-1) - {x^2*n1/2})/(sigma^2),2*n1-2)
+    b <- sqrt(2*S1os*(2*n1 - 1)/n1)
+    K <- integrate(F1,-b,b)$value
+    F2 <- function(x) x*F1(x)
+    Em <- integrate(F2,-b,b)$value/K
+    Em-delta
+}
+
+#' Maximum bias of the estimate mean difference following blinded interim analyses 
+#'
+#' \code{simMBIA} computes, via Monte-Carlo simulation,
+#' the bias for estimates of the mean difference
+#' if the blinded sample size reassessment rule is chosen
+#' such that the bias is maximised.
+#'
+#' @param delta true mean difference
+#' @param n1 first stage per group sample size
+#' @param sigma true standard deviation
+#' @param runs number of simulted trials
+simMBIA <- function(delta=0,n1=2,sigma=1,runs=100)
+{
+    ## means, variances group 1 and 2
+  ma=rnorm(runs,0,sigma/sqrt(n1))
+  mb=rnorm(runs,delta,sigma/sqrt(n1))
+  sa=sigma^2*rchisq(runs,n1-1)
+  sb=sigma^2*rchisq(runs,n1-1)
+  ## mean differnce
+  md = mb-ma
+  ## interim variance estimate
+  S1os=(sa+sb+(n1/2)*md^2)/(2*n1-1)
+  ## expected bias
+  biasv=simplify2array(mclapply(S1os,cond.bias,n1=n1,delta=delta,sigma=sigma))
+  ## if the expected bias is positive stop otherwise make second stage infinitely large
+  est1=ifelse(biasv>0,md-delta,0)
+  ## otherway around
+  est2=ifelse(biasv<0,md-delta,0)
+  ## stop  always
+  est3=md-delta
+  c(m.bias = mean(est1),
+    m.biasn = mean(est2),
+    i.bias = mean(est3))
+}
+
+#' Simulation results from "Estimation after blinded interim analyses"
+#'
+#' A dataset containing the very simulation results used shown in the
+#' article "Estimation after blinded interim analyses". The simulation
+#' may be re-run using code shown in the
+#' \code{\link{vignette("SimulateBias")}}.
+#'
+#' @format A \code{data.frame}, each line corresponds to the outcome from
+#' one simulation run with $10^6$ simulated trials.
+#' @name gridsim
+NULL
