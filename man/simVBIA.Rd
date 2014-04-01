@@ -1,0 +1,82 @@
+\name{simVBIA}
+\alias{simVBIA}
+\title{Simulate estimation after blinded interim analyses}
+\usage{
+simVBIA(delta, sigma, d, alpha = 0.025, beta = 0.2, v = 1/2, s = zsd(n1,
+  d, v, alpha, beta), n1 = ceiling(v * zss(s, d, alpha, beta)), runs,
+  n2 = n1, n2min = 0, testdata = FALSE, fulldata = FALSE,
+  wurzel = FALSE, cf = 0, ...)
+}
+\arguments{
+  \item{delta}{true effect size}
+
+  \item{sigma}{true standard deviation}
+
+  \item{d}{assumed effect size}
+
+  \item{alpha}{= .025 pre-specified alpha level}
+
+  \item{beta}{pre-specified beta level}
+
+  \item{v}{timing of interim analysis}
+
+  \item{s}{assumed standard deviation, is more or less the
+  same as n1}
+
+  \item{n1}{first stage sample size in treatment group}
+
+  \item{runs}{number of simulation runs}
+
+  \item{n2}{first stage sample size in control group}
+
+  \item{n2min}{minimum secondstage sample size}
+
+  \item{testdata}{debugging option not for general use}
+
+  \item{fulldata}{return full data}
+
+  \item{cf}{correction term added to the sample size rule}
+
+  \item{...}{}
+}
+\value{
+If fulldata is \code{FALSE} simVBIA returns a list with the
+following items, summarizing the simulation results for
+designs with sample size reassessment based on the adjusted
+interim variance estimates: \item{lower.prob}{Coverage
+probability of the lower confidence bound}
+\item{upper.prob}{Coverage probability of the upper
+confidence bound} \item{total.prob}{Coverage probability of
+the two sided confidence interval} \item{mean.bias}{Bias of
+the mean estimate} \item{variance.bias}{Bias of the
+variance estimate} \item{vm.bias}{Bias of the variance of
+the mean estimate} \item{vm.diff}{Difference between monte
+carlo vm and theoretical vm} \item{root.mse}{Root mean
+squared error of the effect estimate} \item{mean.m1}{Mean
+second stage sample size} \item{low.m1}{Lower 10 percen
+quantile of second stage sample sizes}
+\item{n10}{Probability that the second stage sample size is
+zero} as well as results for designs with sample size
+reassessment based on unadjusted interim estimates:
+\item{uc.mean.bias}{Bias of the mean estimate}
+\item{uc.variance.bias}{Bias of the variance estimate}
+\item{uc.vm.bias}{Bias of the variance estimate}
+\item{uc.vm.diff}{Difference between monte carlo vm and
+theoretical vm} \item{uc.root.mse}{Root mean squared error
+of the effect estimate} \item{uc.mean.m1}{Mean second stage
+sample size} \item{uc.low.m1}{Lower 10 percen quantile of
+second stage sample sizes} \item{uc.n10}{Probability that
+the second stage sample size is zero} \item{tn1 = mean(n1)}
+}
+\description{
+\code{simVBIA} simulates \code{runs} adaptive trials with
+blinded interim analysis and assesses the bias of the
+variance and mean estimates. Sample size review is
+performed either using an interim estimate of the pooled
+variance that is adjusted based on the assumed effect size
+or the uncorrected lumped variance.
+}
+\examples{
+simVBIA(.5,1,1,runs=10^3)
+}
+

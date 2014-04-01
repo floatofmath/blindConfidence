@@ -1,0 +1,26 @@
+\name{simMBIA}
+\alias{simMBIA}
+\title{Maximum bias of the estimate mean difference following blinded interim analyses}
+\usage{
+simMBIA(delta = 0, n1 = 2, sigma = 1, runs = 100)
+}
+\arguments{
+  \item{delta}{true mean difference}
+
+  \item{n1}{first stage per group sample size}
+
+  \item{sigma}{true standard deviation}
+
+  \item{runs}{number of simulted trials}
+}
+\value{
+A vector following components: \item{m.bias}{Maximum mean
+bias that can be attained for a given parameter setting}
+}
+\description{
+\code{simMBIA} computes, via Monte-Carlo simulation, the
+bias for estimates of the mean difference if the blinded
+sample size reassessment rule is chosen such that the bias
+is maximised.
+}
+

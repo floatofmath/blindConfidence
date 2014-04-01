@@ -342,12 +342,15 @@ plotSim <- function(seq,res,...){
 #' @param n1 first stage per group sample size
 #' @param delta true difference of means
 #' @param sigma true standard deviation
+#' @export
 cond.bias <- function(S1os,n1,delta,sigma){
-    F1 <- function(x) dnorm(x,delta,sqrt({2*sigma^2}/n1)) * dchisq((S1os*(2*n1-1) - {x^2*n1/2})/(sigma^2),2*n1-2)
+    F1 <- function(x,S1os,n1,delta,sigma)
+        dnorm(x,delta,sqrt({2*sigma^2}/n1)) * dchisq((S1os*(2*n1-1) - {x^2*n1/2})/(sigma^2),2*n1-2)
     b <- sqrt(2*S1os*(2*n1 - 1)/n1)
-    K <- integrate(F1,-b,b)$value
-    F2 <- function(x) x*F1(x)
-    Em <- integrate(F2,-b,b)$value/K
+    K <- integrate(F1,-b,b,S1os=S1os,n1=n1,delta=delta,sigma=sigma)$value
+    F2 <- function(x,S1os,n1,delta,sigma)
+        x*F1(x,S1os=S1os,n1=n1,delta=delta,sigma=sigma)
+    Em <- integrate(F2,-b,b,S1os=S1os,n1=n1,delta=delta,sigma=sigma)$value/K
     Em-delta
 }
 
@@ -362,9 +365,13 @@ cond.bias <- function(S1os,n1,delta,sigma){
 #' @param n1 first stage per group sample size
 #' @param sigma true standard deviation
 #' @param runs number of simulted trials
+#' @return A vector following components:
+#' \item{m.bias}{Maximum positiv mean bias that can be attained for a given parameter setting}
+#' \item{m.bias.n}{Maximum negative mean bias that can be attained}
+#' @export
 simMBIA <- function(delta=0,n1=2,sigma=1,runs=100)
 {
-    ## means, variances group 1 and 2
+  ## means, variances group 1 and 2
   ma=rnorm(runs,0,sigma/sqrt(n1))
   mb=rnorm(runs,delta,sigma/sqrt(n1))
   sa=sigma^2*rchisq(runs,n1-1)
@@ -375,6 +382,7 @@ simMBIA <- function(delta=0,n1=2,sigma=1,runs=100)
   S1os=(sa+sb+(n1/2)*md^2)/(2*n1-1)
   ## expected bias
   biasv=simplify2array(mclapply(S1os,cond.bias,n1=n1,delta=delta,sigma=sigma))
+  
   ## if the expected bias is positive stop otherwise make second stage infinitely large
   est1=ifelse(biasv>0,md-delta,0)
   ## otherway around
@@ -382,8 +390,7 @@ simMBIA <- function(delta=0,n1=2,sigma=1,runs=100)
   ## stop  always
   est3=md-delta
   c(m.bias = mean(est1),
-    m.biasn = mean(est2),
-    i.bias = mean(est3))
+    m.bias.n = mean(est2))
 }
 
 #' Simulation results from "Estimation after blinded interim analyses"

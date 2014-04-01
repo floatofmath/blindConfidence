@@ -1,5 +1,7 @@
+export(cond.bias)
 export(lowerBound)
 export(plotSim)
+export(simMBIA)
 export(simVBIA)
 export(zsd)
 export(zss)
