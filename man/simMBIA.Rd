@@ -14,8 +14,10 @@ simMBIA(delta = 0, n1 = 2, sigma = 1, runs = 100)
   \item{runs}{number of simulted trials}
 }
 \value{
-A vector following components: \item{m.bias}{Maximum mean
-bias that can be attained for a given parameter setting}
+A vector following components: \item{m.bias}{Maximum
+positiv mean bias that can be attained for a given
+parameter setting} \item{m.bias.n}{Maximum negative mean
+bias that can be attained}
 }
 \description{
 \code{simMBIA} computes, via Monte-Carlo simulation, the

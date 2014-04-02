@@ -69,8 +69,9 @@ zsd <- function(n1,d,v = 1/2,alpha,beta){
 #' \item{total.prob}{Coverage probability of the two sided confidence interval}
 #' \item{mean.bias}{Bias of the mean estimate}
 #' \item{variance.bias}{Bias of the variance estimate}
-#' \item{vm.bias}{Bias of the variance of the mean estimate}
-#' \item{vm.diff}{Difference between monte carlo vm and theoretical vm}
+#' \item{ev}{Variance of the mean estimate as estimated from the adaptive trian}
+#' \item{exv}{Variance of the mean estimate of a fixed sample trial with corresponding sample size}
+#' \item{vm}{Variance of the mean estimate in the monte carlo sample}
 #' \item{root.mse}{Root mean squared error of the effect estimate}
 #' \item{mean.m1}{Mean second stage sample size}
 #' \item{low.m1}{Lower 10 percen quantile of second stage sample sizes}
@@ -79,8 +80,9 @@ zsd <- function(n1,d,v = 1/2,alpha,beta){
 #' based on unadjusted interim estimates:
 #' \item{uc.mean.bias}{Bias of the mean estimate}
 #' \item{uc.variance.bias}{Bias of the variance estimate}
-#' \item{uc.vm.bias}{Bias of the variance estimate}
-#' \item{uc.vm.diff}{Difference between monte carlo vm and theoretical vm}
+#' \item{uc.ev}{Variance of the mean estimate as estimated from the adaptive trian}
+#' \item{uc.exv}{Variance of the mean estimate of a fixed sample trial with corresponding sample size}
+#' \item{uc.vm}{Variance of the mean estimate in the monte carlo sample}
 #' \item{uc.root.mse}{Root mean squared error of the effect estimate}
 #' \item{uc.mean.m1}{Mean second stage sample size}
 #' \item{uc.low.m1}{Lower 10 percen quantile of second stage sample sizes}

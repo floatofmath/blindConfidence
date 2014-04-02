@@ -51,12 +51,10 @@ gsim$bound <- lowerBound(gsim$n1,gsim$d)
 ## reduce the number of scenarios
 dsim <- subset(gsim,sigma %in% c(.5,1,1.5,2) & d %in% c(1) & s %in% c(.5,1,1.5,2))
 
-options(mc.cores=detectCores()-3)
+options(mc.cores=15)
 D <- subset(G,sigma %in% c(.5,1,1.5,2) & d %in% c(1) & s %in% c(.5,1,1.5,2))
-runs <- 10^3
-bsim <- do.call(rbind,mclapply(1:nrow(D),function(i) {c(G[i,],simMBIA(delta=G[i,]$delta,sigma=G[i,]$sigma,n1=dsim[i,]$n1,runs=runs))}))
-
-simMBIA(1,5,.5,1000)
+runs <- 10^5
+bsim <- do.call(rbind,lapply(1:nrow(D),function(i) {c(G[i,],simMBIA(delta=G[i,]$delta,sigma=G[i,]$sigma,n1=dsim[i,]$n1,runs=runs))}))
 
 bsim <- as.data.frame(apply(bsim,1,unlist),row.names=NA)
 bsim <- as.data.frame(apply(bsim,1,unlist),row.names=NA)
@@ -73,8 +71,8 @@ each scenario.
 
 
 ```{r,eval=FALSE,echo=FALSE}
-fname <- paste('/tmp/gridsim_',format(Sys.time(),"%y%m%d"),'.Rd',sep='')
-save(gridsim,file=fname)
+fname <- paste('~/gridsim_',format(Sys.time(),"%y%m%d"),'.Rd',sep='')
+save(gridsim,bsim,file=fname)
 ```
 
 Instead of running the simulation each time, we can just load the data
