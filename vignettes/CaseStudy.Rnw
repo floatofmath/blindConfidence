@@ -89,6 +89,14 @@ gsim$var.rbias <- gsim$variance.bias/gsim$sigma^2
 gsim$bound <- lowerBound(gsim$n1,gsim$d)
 dsim <- gsim
 
+max.mean.bias <- max(dsim$mean.bias)
+uc.max.mean.bias <- max(dsim$uc.mean.bias)
+min.mean.bias <- min(dsim$mean.bias)
+uc.min.mean.bias <- min(dsim$uc.mean.bias)
+
+max.var.bias <- min(dsim$variance.bias)
+uc.max.var.bias <- min(dsim$uc.variance.bias)
+
 
 @ 
 If the sample size reassessment is based on the unadjusted interim
@@ -104,8 +112,8 @@ reaches the theoretical boundary if the true mean effect is $\delta =
 0$ and the true standard deviation $\sigma$ is larger than $8$. For
 smaller values of the true standard deviation the maximally attained
 bias is smaller in magnitude. The mean bias goes up to
-$\Sexpr{round{uc.max.mean.bias}}$ for negative values of the true 
-effect size and as low as $\Sexpr{round{uc.min.mean.bias}}$  for
+$\Sexpr{round(uc.max.mean.bias)}$ for negative values of the true 
+effect size and as low as $\Sexpr{round(uc.min.mean.bias)}$  for
 negative values of the true effect size. Our simulations suggest that
 the maximum of the absolute bias is reached when the true standard
 deviation is close to the initial assumptions (\ie $\sigma \approx s =
@@ -119,24 +127,24 @@ even larger taking values up to $\Sexpr{round(max.var.bias)}$ for the
 variance and up to $\Sexpr{round(max.mean.bias)}$ for the mean,
 respectively. 
 
-In terms of coverage probabilities for the confidence interval around
-the mean estimate our simulation results show 
+% In terms of coverage probabilities for the confidence interval around
+% the mean estimate our simulation results show 
 
 
-In Figure bla. 
-
-
-
-In a systematic review Pittler report observerd mean differences
-between $4$ and $17$ with standard deviations between $3$ and $5$
-
-\Section{Appendix: Detailed results for the case study}
-\label{sec:app}
+% In Figure bla. 
 
 
 
+% In a systematic review Pittler report observerd mean differences
+% between $4$ and $17$ with standard deviations between $3$ and $5$
 
-<<>>=
+% \Section{Appendix: Detailed results for the case study}
+% \label{sec:app}
+
+
+
+
+<<eval=F>>=
 
 
 lverbose = function(variable,value){
@@ -198,7 +206,7 @@ plot(x=delta,res['m1',],type="l")
 
 
 @ 
-<<>>=
+<<eval=F>>=
 n1 <- 15
 X <- replicate(1000,rnorm(n1))
 Y <- replicate(1000,rnorm(n1))

@@ -344,8 +344,7 @@ plotSim <- function(seq,res,...){
 #' @param n1 first stage per group sample size
 #' @param delta true difference of means
 #' @param sigma true standard deviation
-#' @return Expected minus true mean-difference
-#' @export
+#' @return expected minus true mean-difference
 #' @export
 cond.bias <- function(S1os,n1,delta,sigma){
     F1 <- function(x,S1os,n1,delta,sigma)
