@@ -344,6 +344,8 @@ plotSim <- function(seq,res,...){
 #' @param n1 first stage per group sample size
 #' @param delta true difference of means
 #' @param sigma true standard deviation
+#' @return Expected minus true mean-difference
+#' @export
 #' @export
 cond.bias <- function(S1os,n1,delta,sigma){
     F1 <- function(x,S1os,n1,delta,sigma)
@@ -405,4 +407,17 @@ simMBIA <- function(delta=0,n1=2,sigma=1,runs=100)
 #' @format A \code{data.frame}, each line corresponds to the outcome from
 #' one simulation run with $10^6$ simulated trials.
 #' @name gridsim
+NULL
+
+
+#' Case study simulations "Estimation after blinded interim analyses"
+#'
+#' A dataset containing the very simulation results for the case study
+#' presented in in the article "Estimation after blinded interim analyses".
+#' The simulation may be re-run using code shown in the
+#' \code{\link{vignette("SimulateBias")}}.
+#'
+#' @format A \code{data.frame}, each line corresponds to the outcome from
+#' one simulation run with $10^6$ simulated trials.
+#' @name casesim
 NULL
