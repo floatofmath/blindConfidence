@@ -14,7 +14,7 @@ cond.bias(S1os, n1, delta, sigma)
   \item{sigma}{true standard deviation}
 }
 \value{
-Expected minus true mean-difference
+expected minus true mean-difference
 }
 \description{
 \code{cond.bias} computes the expected bias of the mean

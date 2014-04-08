@@ -2,21 +2,62 @@
 
 \usepackage{colortbl}
 \usepackage{booktabs}
+\newcommand{\ie}{{\em i.e.,~}}
 \begin{document}
 
+\section{Introduction}
 
-<<loadstuff,include=F>>=
+This vignette reruns the simulations shown in the case study of our
+paper. Running the simulations for the case study requires some
+additional packages. Most notably \texttt{bt88.03.704} which can be
+installed from github using \texttt{install\_github} from package
+\texttt{devtools}.
 
-library(blindConfidence)
-library(parallel)
-library(ggplot2)
-library(directlabels)
-options(mc.cores=pmax(1,detectCores()-2))
+<<instalBT88,eval=F>>=
+library(devtools)
+install_github('floatofmath/bt88.03.704')
+
 
 @ 
 
 
+<<loadstuff,include=F,echo=F>>=
+
+library(blindConfidence)
+library(parallel)
+library(ggplot2)
+library(bt88.03.704)
+options(mc.cores=pmax(1,detectCores()-2))
+
+@ 
+
+The next code chunk runs the simulations. This may take a several of
+hours to a couple of days depending on the machine you run them
+on. Here with 32 cores and 32GB ram it took about 2 hours. 
+
+<<SimulationCode,eval=F>>=
+
+set.seed(659376)
+G <- expand.grid(delta = round(seq(-2*d, 2*d,d/20),2),sigma = round(seq(1,20,1)),d=5.5,s=8,n1=15)
+
+runs=5*10^6
+casesim <- t(simplify2array(mclapply(1:nrow(G),function(i) {c(G[i,],simVBIA(delta=G[i,]$delta,sigma=G[i,]$sigma,d=G[i,]$d,s=G[i,]$s,n1=G[i,]$n1,cf=1,runs=runs,alpha=.025,beta=.2))})))
+pN <- 2*ceiling(zss(s,d,alpha,beta))
+print(fname <- paste('casesim_',format(Sys.time(),"%y%m%d"),'.Rd',sep=''))
+save(casesim,file=fname)
+
+@
+
+
+
+
+\section{Case study}
+
+The next chunk sets up the basic parameters taken from
+\cite{kieser2003}. 
+
 <<setting,include=F>>=
+
 alpha = 0.025
 beta = 0.2
 d = 5.5
@@ -25,64 +66,34 @@ s = 8
 n1 <- 15
 s1o <- 6
 s1a <- 5.3
-@ 
-
-Kieser and Friede (2003) give the example of randomized placebo
-controlled study of the efficacy of the kava-kava special extract
-WS(r) 1490 in the treatment of anxiety (Malsch and Kieser 2001). The
-primary endpoint of the study was the change in the Hamilton Anxiety
-Scale (HAMA) between baseline and end of treatment. They assume a mean
-difference  between treatment and control of $d = \Sexpr{d}$ and standard
-deviation of $s = 8$. Consequently a sample size of $34$ patients per
-group is required to attain the desired power of $80\%$. They assume
-that after $15$ patients per group a blinded interim analysis with
-sample size reassessment is performed. 
-
-
-<<maxVarbias,echo=F,results=F>>=
-
-variance.bias <- upper.bias(n1,d,alpha,beta)
 
 @ 
 
-<<eval=F>>=
 
-v <- expand.grid(delta=seq(0,2*d,length.out=200),sigma=seq(1,20,length.out=200))
+As an example \cite{kieser2003} present the trial reported in
+\cite{malsch2001}, which is a randomized placebo controlled trial of
+the efficacy of the kava-kava special extract "WS$^\textregistered$
+1490" for the treatment of anxiety. The primary endpoint of the study
+was the change in the Hamilton Anxiety Scale (HAMA) between baseline
+and end of treatment. Assuming a mean difference between treatment and
+control of $\delta_0 = \Sexpr{d}$ and standard deviation of $\sigma_0
+= 8$ (\ie a variance of $\sigma_0^2=64$) results in a sample size of
+$34$ patients per group to provide a power of $80\%$.
 
-mean.bias <- mclapply(1:nrow(v),function(i) c(v[i,],cond.bias(s1o,n1,delta=v[i,1],sigma=v[i,2])))
+<<maxVarbias,include=F,echo=F>>=
 
-mean.bias <- lapply(mean.bias,unlist)
-mean.bias <- as.data.frame(do.call(rbind,mean.bias))
-colnames(mean.bias)[3] <- 'bias'
-
-
-f <- ggplot(mean.bias,aes(x=sigma,y=delta,z=bias))+ geom_tile(aes(fill=bias)) + stat_contour(aes(colour=..level..)) + scale_fill_gradient(low='red',high='green')
-direct.label(f)
-
-out <- matrix(mean.bias$bias,ncol=length(unique(mean.bias$sigma)),
-              nrow=length(unique(mean.bias$delta)))
-test <- matrix(mean.bias$delta,ncol=length(unique(mean.bias$sigma)),
-              nrow=length(unique(mean.bias$delta)))
-
-persp(unique(mean.bias$delta),unique(mean.bias$sigma),out,theta=130,phi=20,xlab=expression(delta),ylab=expression(sigma),zlab="Expected Bias")
+variance.bias <- lowerBound(n1,d,alpha,beta)
 
 @ 
 
-<<>>=
-## set.seed(659376)
-## G <- expand.grid(delta = round(seq(-2*d, 2*d,d/20),2),sigma = round(seq(1,20,.5)),d=5.5,s=8,n1=15)
 
-## runs=10^6
-## casesim <- t(simplify2array(mclapply(1:nrow(G),function(i) {c(G[i,],simulation(delta=G[i,]$delta,sigma=G[i,]$sigma,d=G[i,]$d,s=G[i,]$s,n1=G[i,]$n1,runs=runs,alpha=.025,beta=.2))})))
-## pN <- 2*ceiling(zss(s,d,alpha,beta))
-## print(fname <- paste('casesim_',format(Sys.time(),"%y%m%d"),'.Rd',sep=''))
-## save(casesim,file=fname)
+
+<<include=F,echo=F>>=
 data('casesim')
 
 
 require(ggplot2)
-
-gsim <- as.data.frame(t(apply(casesim,1,unlist)))
+gsim <- as.data.frame(t(lapply(casesim,unlist)))
 gsim <- subset(gsim,sigma>0)
 
 gsim$var.rbias <- gsim$variance.bias/gsim$sigma^2
@@ -97,34 +108,49 @@ uc.min.mean.bias <- min(dsim$uc.mean.bias)
 max.var.bias <- min(dsim$variance.bias)
 uc.max.var.bias <- min(dsim$uc.variance.bias)
 
-
+#$
 @ 
+
+\cite{kieser2003} assume that sample size reassessment based on
+blinded data is performed after $15$ patients per group and consider 
+that the interim estimate of the standard deviation is $S_{1,OS} =
+6$ and adjusting for $\delta_0 = 5.5$ gives
+$S_{1,OS,\delta_0}=5.3$. The corresponding updated sample sizes are
+then given by 19 and 15 patients (per group), respectively. In an
+unrestricted desgin, an additional 4 patients per group would have 
+been recruited based on $S_{1,OS}$; the trial would have been stopped
+early based on $S_{1,OS,\delta_0}$.
+
 If the sample size reassessment is based on the unadjusted interim
-variance estimate, the variance estimate from the completed trial will
-be negatively biased. Theorem 3 gives an upper bound for the magnitude
-of that bias which is $\Sexpr{round(variance.bias,2)}$. [TODO: theoretical results for mean bias] 
-
-
-A simulation study, similar to that of Section (?) (see Appendix (?)
-for details), shows that in designs using the unadjusted interim
-variance estimate to reassess the sample size, the variance bias
-reaches the theoretical boundary if the true mean effect is $\delta =
-0$ and the true standard deviation $\sigma$ is larger than $8$. For
-smaller values of the true standard deviation the maximally attained
-bias is smaller in magnitude. The mean bias goes up to
-$\Sexpr{round(uc.max.mean.bias)}$ for negative values of the true 
-effect size and as low as $\Sexpr{round(uc.min.mean.bias)}$  for
-negative values of the true effect size. Our simulations suggest that
+variance estimate $S_{1,OS}$, the variance estimate from the completed
+trial will be negatively biased. Theorem \ref{the:bound} gives a lower
+bound for the magnitude of that bias which in this case is
+$\Sexpr{round(variance.bias,2)}$. We also performed a simulation
+study, similar to that of Section \ref{sec:simulation}, where we fix
+$\delta_0=5.5$ and $\sigma_0=8$ and $n_1=15$ - but not $S_{1,OS}$,
+$S_{1,OS,\delta_0}$ - and let $\delta$ vary from $-2\delta_0=-11$ to
+$2\delta_0=11$ in steps of $0.05$ and $\sigma$ from $1$ to $20$ in
+steps of $1$. Detailed results are shown in Figure \ref{fig:case}
+where we plot the coverage of the confidence intervals, bias of the
+mean, and variance estimate, and the average second stage sample
+size. The variance bias gets as low as
+$\Sexpr{round(uc.max.var.bias)}$, \ie it reaches the theoretical 
+boundary, if the true mean effect is $\delta =0$ and the true standard
+deviation $\sigma$ is larger than $8$. For smaller values of the true
+standard deviation the bias is smaller in magnitude. The mean bias
+goes up to $\Sexpr{round(uc.max.mean.bias,2)}$ for negative values of
+the true effect size and as low as $\Sexpr{round(uc.min.mean.bias,2)}$
+for positive values of the true effect size. Our simulations suggest that
 the maximum of the absolute bias is reached when the true standard
 deviation is close to the initial assumptions (\ie $\sigma \approx s =
 8$) and the true effect size is around plus or minus the initial
-effect size assumptions (\ie $\delta \approx -d = -5.5$
-or $\delta \approx d = 5.5$). 
+effect size assumptions (\ie $\delta \approx -d = -5.5$ or $\delta
+\approx d = 5.5$). 
 
 If the sample size reassessment is based on the adjusted variance
 estimate, the absolute bias of the variance and mean estimate will be
-even larger taking values up to $\Sexpr{round(max.var.bias)}$ for the
-variance and up to $\Sexpr{round(max.mean.bias)}$ for the mean,
+even larger taking values up to $\Sexpr{round(max.var.bias,2)}$ for the
+variance and up to $\Sexpr{round(max.mean.bias,2)}$ for the mean,
 respectively. 
 
 % In terms of coverage probabilities for the confidence interval around
@@ -144,7 +170,7 @@ respectively.
 
 
 
-<<eval=F>>=
+<<eval=T,echo=F>>=
 
 
 lverbose = function(variable,value){
@@ -155,58 +181,57 @@ lverbose = function(variable,value){
     }
 }
 
+tdsim <- dsim
+
+dsim <- subset(tdsim, sigma %in% (c(1:5)*2) )
 tupd <- ggplot(dsim,mapping=aes(x=delta,y=.025-upper.prob)) +
     geom_line(y=0,colour='gray') +
     geom_path(lty=2) + #geom_point(shape='u') +
     geom_path(aes(y=.025-lower.prob),lty=3) + #geom_point(aes(y=.025-lower.prob),shape='l') +
     geom_path(aes(y=.05-total.prob)) + #geom_point(aes(y=.05-total.prob),shape='t') +
-    facet_grid(sigma~s,labeller=lverbose) + theme_bw() + ylim(-.02,.01) + xlab(expression(delta)) + ylab('actual - nominal coverage')
-print(tupd)
-
-
+    facet_grid(s~sigma,labeller=lverbose) + theme_bw() + ylim(-.02,.01) + xlab(expression(delta)) + ylab('actual - nominal coverage')
 tupd.uc <- ggplot(dsim,mapping=aes(x=delta,y=.025-uc.upper.prob)) +
     geom_line(y=0,colour='gray') +
     geom_path(lty=2) + # geom_point(shape='u') +
     geom_path(aes(y=.025-uc.lower.prob),lty=3) + #geom_point(aes(y=.025-uc.lower.prob),shape='l') +
     geom_path(aes(y=.05-uc.total.prob)) + #geom_point(aes(y=.05-uc.total.prob),shape='t') +
-    facet_grid(sigma~s,labeller=lverbose) + theme_bw()+  ylim(-.02,.01) + xlab(expression(delta)) + ylab('actual -nominal coverage')
-print(tupd.uc)
-
-
-
+    facet_grid(s~sigma,labeller=lverbose) + theme_bw()+  ylim(-.02,.01) + xlab(expression(delta)) + ylab('actual -nominal coverage')
 tupd.variance.bias <- ggplot(dsim,mapping=aes(x=delta,y=variance.bias)) +
     geom_line(y=0,colour='gray') + geom_path(aes(y=bound),color="red") +
   geom_path(lty=1) + geom_path(aes(y=uc.variance.bias),lty=2) +#geom_point(shape='V') + geom_point(aes(y=mean.bias),shape='M') +
-  facet_grid(sigma~s,labeller=lverbose) + theme_bw() + xlab(expression(delta)) + ylab('bias')
-print(tupd.variance.bias)
-
+  facet_grid(s~sigma,labeller=lverbose) + theme_bw() + xlab(expression(delta)) + ylab('bias')+ggtitle('Variance Bias')
 tupd.mean.bias <- ggplot(dsim,mapping=aes(x=delta,y=mean.bias)) + geom_path(lty=1)+
   geom_line(y=0,colour='gray') + # geom_path(aes(y=mean.upper.bias*sign(-delta)),lty=3,col='red')     
   geom_path(aes(y=uc.mean.bias),lty=2) +
-  facet_grid(sigma~s,labeller=lverbose) + theme_bw()  + xlab(expression(delta)) + ylab('bias') # +  ylim(-.2,.2)
-print(tupd.mean.bias)
-
-
-
+  facet_grid(s~sigma,labeller=lverbose) + theme_bw()  + xlab(expression(delta)) + ylab('bias') + ggtitle('Mean Bias') # +  ylim(-.2,.2)
 tupd.mean.bias.sem <- ggplot(dsim,mapping=aes(x=delta,y=mean.bias/(sigma/sqrt(n1)))) +
   geom_line(y=0,colour='gray') +  
   geom_path(lty=1) + geom_path(aes(y=uc.mean.bias/(sigma/sqrt(n1))),lty=2) + #geom_path(aes(y=mean.upper.bias*sign(-delta)/(sigma/sqrt(n1))),lty=3,col='red')+#geom_point(shape='V') +geom_point(aes(y=uc.mean.bias),shape='M') +
-  facet_grid(s~sigma,labeller=lverbose) + theme_bw() + xlab(expression(delta)) + ylab('bias')
-print(tupd.mean.bias.sem)
-
+  facet_grid(s~sigma,labeller=lverbose) + theme_bw() + xlab(expression(delta)) + ylab('bias')+ggtitle('Mean Bias (SEM Scaled)')
 tupd.ass <- ggplot(dsim,mapping=aes(x=delta,y=(mean.m1+n1))) +
   geom_line(y=0,colour='gray') +  
   geom_path(lty=1) + geom_path(aes(y=uc.mean.m1+n1),lty=2) +#geom_point(shape='V') +geom_point(aes(y=uc.mean.bias),shape='M') +
-  facet_grid(sigma~s,labeller=lverbose) + theme_bw() + xlab(expression(delta)) + ylab('average sample size')
-print(tupd.ass)
+  facet_grid(s~sigma,labeller=lverbose) + theme_bw() + xlab(expression(delta)) + ylab('average sample size')+ggtitle('Average Second Stage Sample Size')
+
+pdf('casestudy.pdf')
+multiplot(tupd.mean.bias,tupd.variance.bias,tupd.ass)
+dev.off()
+
+
 
 delta=seq(0,2*delta,.25)
 res=vbias.sim(d=delta,n1=15,sig=8,runs=20000)
 plot(x=delta,res['m1',],type="l")
 
 
+
+
 @ 
-<<eval=F>>=
+
+\end{document}
+
+
+<<eval=F,echo=F>>=
 n1 <- 15
 X <- replicate(1000,rnorm(n1))
 Y <- replicate(1000,rnorm(n1))
@@ -224,4 +249,24 @@ XYs - (Xs + Ys + (n1/2)*md^2)/(2*n1-1)
 
 
 @ 
-\end{document}
+
+<<eval=F,include=F,echo=F>>=
+
+v <- expand.grid(delta=seq(0,2*d,length.out=200),sigma=seq(1,20,length.out=200))
+
+mean.bias <- mclapply(1:nrow(v),function(i) c(v[i,],cond.bias(s1o,n1,delta=v[i,1],sigma=v[i,2])))
+
+mean.bias <- lapply(mean.bias,unlist)
+mean.bias <- as.data.frame(do.call(rbind,mean.bias))
+colnames(mean.bias)[3] <- 'bias'
+
+
+f <- ggplot(mean.bias,aes(x=sigma,y=delta,z=bias))+ geom_tile(aes(fill=bias)) + stat_contour(aes(colour=..level..)) + scale_fill_gradient(low='red',high='green')
+direct.label(f)
+
+out <- matrix(mean.bias$bias,ncol=length(unique(mean.bias$sigma)),
+              nrow=length(unique(mean.bias$delta)))
+pdf('persmb.pdf')
+persp(unique(mean.bias$delta),unique(mean.bias$sigma),out,theta=130,phi=20,xlab=expression(delta),ylab=expression(sigma),zlab="Expected Bias")
+dev.off()
+@ 

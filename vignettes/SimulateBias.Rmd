@@ -35,7 +35,7 @@ scenario and the code is available as supplementary material.
 ```{r,eval=FALSE}
 set.seed(50014056)
 runs <- 10^6
-gridsim <- t(simplify2array(mclapply(1:nrow(G),function(i) {c(G[i,],simVBIA(delta=G[i,]$delta,sigma=G[i,]$sigma,d=G[i,]$d,s=G[i,]$s,runs=runs,alpha=.025,beta=.2))})))
+gridsim <- t(simplify2array(mclapply(1:nrow(G),function(i) {c(G[i,],simVBIA(delta=G[i,]$delta,sigma=G[i,]$sigma,d=G[i,]$d,s=G[i,]$s,cf=1,runs=runs,alpha=.025,beta=.2))})))
 
 
 gsim <- as.data.frame(t(apply(gridsim,1,unlist)))
@@ -59,7 +59,8 @@ bsim <- do.call(rbind,lapply(1:nrow(D),function(i) {c(G[i,],simMBIA(delta=G[i,]$
 bsim <- as.data.frame(apply(bsim,1,unlist),row.names=NA)
 bsim <- as.data.frame(apply(bsim,1,unlist),row.names=NA)
 
-dsim$mean.upper.bias <- bsim[,9]
+dsim$mean.upper.bias <- bsim[,5]
+dsim$mean.lower.bias <- bsim[,6]
 
 gridsim <- dsim
 
@@ -132,6 +133,7 @@ tupd <- ggplot(gridsim,mapping=aes(x=delta,y=.025-upper.prob)) +
     geom_path(aes(y=.05-total.prob)) + #geom_point(aes(y=.05-total.prob),shape='t') +
     facet_grid(sigma~s,labeller=lverbose) + theme_bw() + ylim(-.025,.01) +
     xlab(expression(delta)) + ylab('actual - nominal coverage')
+
 print(tupd)
 
 ```
@@ -149,12 +151,18 @@ tupd.uc <- ggplot(gridsim,mapping=aes(x=delta,y=.025-uc.upper.prob)) +
 print(tupd.uc)
 
 ```
-Next we look at estimates of the mean difference between treatment groups.
+Next we look at estimates of the mean difference between treatment
+groups. Solid lines show the mean bias for designs where sample sizes
+are adjusted based on the adjusted interim variance estimate, dashed
+lines for designs where sample sizes are adjusted based on the
+unadjusted interim variance estimate. The dotted lines show the
+bias of the mean estimate using a samplesize reassessment rule is used
+in order to maximize the negative or positive bias, respectively.
 
 ```{r}
 
 tupd.mean.bias <- ggplot(gridsim,mapping=aes(x=delta,y=mean.bias)) + geom_path(lty=1)+
-  geom_line(y=0,colour='gray') + geom_path(aes(y=mean.upper.bias),lty=3,col='red') +  geom_path(aes(y=uc.mean.bias),lty=2) +
+  geom_line(y=0,colour='gray') + geom_path(aes(y=mean.upper.bias),lty=3,col='red') + geom_path(aes(y=mean.lower.bias),lty=3,col='red') +  geom_path(aes(y=uc.mean.bias),lty=2) +
   facet_grid(sigma~s,labeller=lverbose) + theme_bw()  + xlab(expression(delta)) + ylab('bias') # +  ylim(-.2,.2)
 print(tupd.mean.bias)
 
@@ -163,8 +171,47 @@ print(tupd.mean.bias)
 
 Next we look at variance estimates. 
 
-As it turns out the estimate of the standard error is close to the
-standard error of the estimated mean estimate across all simulation
+```r
+tupd.var.bias <- ggplot(gridsim,mapping=aes(x=delta,y=variance.bias)) +
+    geom_line(y=0,colour='gray') + geom_path(aes(y=bound),color="red") +
+  geom_path(lty=1) + geom_path(aes(y=uc.variance.bias),lty=2) +#geom_point(shape='V') + geom_point(aes(y=mean.bias),shape='M') +
+  facet_grid(sigma~s,labeller=lverbose) + theme_bw() + ylim(-0.4,0.1) + xlab(expression(delta)) + ylab('bias')
+print(tupd.var.bias)
+
+```
+
+In each simulated trial we estimated the standard error of the mean,
+and compute the standard error of a fixed sample trial with the
+same final sample size. Finally, we compute the standard deviation of
+the mean estimate across all monte carlo samples, which is an unbiased
+estimate of the true standard error of the mean. Figure ? shows the
+results for designs that use the corrected interim variance
+estimate to reassess the sample size; Figure ? shows the results for
+designs that use the unadjusted interim variance estimate. Solid lines
+show the standard deviation of mean estimates across simulated trials,
+dashed lines show the average standard error estimates across
+simulated trials, dotted lines show the average of the true standard
+errors of corresponding fixed sample designs. The true standard error of the mean
+of an adaptive design with blinded sample size reassessment is smaller
+than that of corresponding fixed sample design. The bias of the
+estimate of the standard error is close to zero around the null
+hypothesis.  This holds both for designs using the adjusted and
+unadjusted interim variance estimates to reassess the sample size. It
+explains why  there is practically no inflation of the coverage
+probability of confidence intervals near the null hypotheses, even
+though the variance estimate has a considerable negative bias.
+
+An explanation is
+given in the following figure where we plot the standard error of the
+mean, averaged across all simulated trials; the standard error of the
+mean  of a fixed sample desig the standard deviation of
+the mean estimate across all monte-carlo samples (i.e. the true
+standard error of the mean)  of a given parameter setting
+(dashed line); the Conditional on the second stage sample
+size the estimate of the standard error is smaller than the standard
+error of a fixed sample design with equal sample size. However the true
+variance of mean - as estimated from all monte carlo samples - is 
+estim mean estimate across all simulation 
 runs. This shows that the standard error of a fixed sample design with
 average sample size is larger than the standard error of the adaptive
 design.  
@@ -172,17 +219,15 @@ design.
 
 
 ```{r}
-tupd.vm.bias <- ggplot(gridsim,mapping=aes(x=delta,y=vm)) +
-    geom_line(y=0,colour='gray') + geom_path(aes(y=ev),colour='gray') + geom_path(aes(y=exv),colour='green') +
-  geom_path(lty=1) + geom_path(aes(y=uc.vm),lty=2) +  geom_path(aes(y=uc.ev),colour='gray',lty=2) + geom_path(aes(y=uc.exv),colour='green',lty=2) +
-  facet_grid(sigma~s,labeller=lverbose) + theme_bw() + xlab(expression(delta)) + ylab('bias')
+
+tupd.vm.bias <- ggplot(gridsim,mapping=aes(x=delta,y=vm)) +geom_line(lty=1) + geom_line(y=0,colour='red') + geom_path(aes(y=ev),lty=2) + geom_path(aes(y=exv),lty=3) + 
+    facet_grid(sigma~s,labeller=lverbose) + theme_bw() + xlab(expression(delta)) + ylab('Variance of the mean')
 print(tupd.vm.bias)
 
-tupd.vm.diff <- ggplot(gridsim,mapping=aes(x=delta,y=-vm.diff)) +
-    geom_line(y=0,colour='gray') + 
-  geom_path(lty=1) + geom_path(aes(y=-uc.vm.diff),lty=2) +#geom_point(shape='V') + geom_point(aes(y=mean.bias),shape='M') +
-  facet_grid(sigma~s,labeller=lverbose) + theme_bw() + xlab(expression(delta)) + ylab('bias')
-print(tupd.vm.diff)
+tupd.uc.vm.bias <- ggplot(gridsim,mapping=aes(x=delta,y=uc.vm)) +geom_line(lty=1) + geom_line(y=0,colour='red') + geom_path(aes(y=uc.ev),lty=2) + geom_path(aes(y=uc.exv),lty=3) + 
+    facet_grid(sigma~s,labeller=lverbose) + theme_bw() + xlab(expression(delta)) + ylab('Variance of the mean')
+print(tupd.uc.vm.bias)
+
 ```
 
 
