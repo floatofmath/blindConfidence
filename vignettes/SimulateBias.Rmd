@@ -51,10 +51,10 @@ gsim$bound <- lowerBound(gsim$n1,gsim$d)
 ## reduce the number of scenarios
 dsim <- subset(gsim,sigma %in% c(.5,1,1.5,2) & d %in% c(1) & s %in% c(.5,1,1.5,2))
 
-options(mc.cores=15)
+
 D <- subset(G,sigma %in% c(.5,1,1.5,2) & d %in% c(1) & s %in% c(.5,1,1.5,2))
 runs <- 10^5
-bsim <- do.call(rbind,lapply(1:nrow(D),function(i) {c(G[i,],simMBIA(delta=G[i,]$delta,sigma=G[i,]$sigma,n1=dsim[i,]$n1,runs=runs))}))
+bsim <- do.call(rbind,lapply(1:nrow(G),function(i) {c(G[i,],simMBIA(delta=G[i,]$delta,sigma=G[i,]$sigma,n1=dsim[i,]$n1,runs=runs))}))
 
 bsim <- as.data.frame(apply(bsim,1,unlist),row.names=NA)
 bsim <- as.data.frame(apply(bsim,1,unlist),row.names=NA)
@@ -107,7 +107,7 @@ This little function takes care of annotating the plots.
 
 lverbose = function(variable,value){
     if(variable == "s"){
-        sapply(value,function(val) substitute(paste("s = ",foo,", ",n[1]," = ",n1,sep=''),
+        sapply(value,function(val) substitute(paste(sigma[0]," = ",foo,", ",n[1]," = ",n1,sep=''),
                                               list(foo=val,n1=ceiling(1/2*zss(val,1,.025,.2)))))
     } else {
         label_parsed(variable,label_both(variable,value))
@@ -163,7 +163,7 @@ in order to maximize the negative or positive bias, respectively.
 
 tupd.mean.bias <- ggplot(gridsim,mapping=aes(x=delta,y=mean.bias)) + geom_path(lty=1)+
   geom_line(y=0,colour='gray') + geom_path(aes(y=mean.upper.bias),lty=3,col='red') + geom_path(aes(y=mean.lower.bias),lty=3,col='red') +  geom_path(aes(y=uc.mean.bias),lty=2) +
-  facet_grid(sigma~s,labeller=lverbose) + theme_bw()  + xlab(expression(delta)) + ylab('bias') # +  ylim(-.2,.2)
+  facet_grid(sigma~s,labeller=lverbose) + theme_bw()  + xlab(expression(delta)) + ylab('bias') +  ylim(-.2,.2)
 print(tupd.mean.bias)
 
 ```
@@ -220,12 +220,12 @@ design.
 
 ```{r}
 
-tupd.vm.bias <- ggplot(gridsim,mapping=aes(x=delta,y=vm)) +geom_line(lty=1) + geom_line(y=0,colour='red') + geom_path(aes(y=ev),lty=2) + geom_path(aes(y=exv),lty=3) + 
-    facet_grid(sigma~s,labeller=lverbose) + theme_bw() + xlab(expression(delta)) + ylab('Variance of the mean')
+tupd.vm.bias <- ggplot(gridsim,mapping=aes(x=delta,y=vm)) +geom_line(lty=1) + geom_path(aes(y=ev),lty=2) + geom_path(aes(y=exv),lty=3) + 
+    facet_grid(sigma~s,labeller=lverbose) + theme_bw() + xlab(expression(delta)) + ylab('Variance of the mean estimate')+ylim(0,0.45)
 print(tupd.vm.bias)
 
-tupd.uc.vm.bias <- ggplot(gridsim,mapping=aes(x=delta,y=uc.vm)) +geom_line(lty=1) + geom_line(y=0,colour='red') + geom_path(aes(y=uc.ev),lty=2) + geom_path(aes(y=uc.exv),lty=3) + 
-    facet_grid(sigma~s,labeller=lverbose) + theme_bw() + xlab(expression(delta)) + ylab('Variance of the mean')
+tupd.uc.vm.bias <- ggplot(gridsim,mapping=aes(x=delta,y=uc.vm)) +geom_line(lty=1) + geom_path(aes(y=uc.ev),lty=2) + geom_path(aes(y=uc.exv),lty=3) + 
+    facet_grid(sigma~s,labeller=lverbose) + theme_bw() + xlab(expression(delta)) + ylab('Variance of the mean estimate')+ylim(0,0.45)
 print(tupd.uc.vm.bias)
 
 ```

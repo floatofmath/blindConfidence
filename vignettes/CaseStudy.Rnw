@@ -1,4 +1,7 @@
+%\VignetteEngine{knitr::knitr}
+%\VignetteIndexEntry{Case Study: estimation after blinded interim estimations}
 \documentclass{article}
+
 
 \usepackage{colortbl}
 \usepackage{booktabs}
@@ -14,9 +17,9 @@ installed from github using \texttt{install\_github} from package
 \texttt{devtools}.
 
 <<instalBT88,eval=F>>=
+
 library(devtools)
 install_github('floatofmath/bt88.03.704')
-
 
 @ 
 
@@ -35,14 +38,46 @@ The next code chunk runs the simulations. This may take a several of
 hours to a couple of days depending on the machine you run them
 on. Here with 32 cores and 32GB ram it took about 2 hours. 
 
-<<SimulationCode,eval=F>>=
+We first set up the parameters from \cite{kieser2003} and then run the
+simulation.
+
+<<Settings,echo=F>>=
+
+alpha = 0.025
+beta = 0.2
+d = 5.5
+s = 8
+
+n1 <- 15
+s1o <- 6
+s1a <- 5.3
+@
+
+<<Simulation,eval=F>>=
 
 set.seed(659376)
 G <- expand.grid(delta = round(seq(-2*d, 2*d,d/20),2),sigma = round(seq(1,20,1)),d=5.5,s=8,n1=15)
 
-runs=5*10^6
+runs=10^6
 casesim <- t(simplify2array(mclapply(1:nrow(G),function(i) {c(G[i,],simVBIA(delta=G[i,]$delta,sigma=G[i,]$sigma,d=G[i,]$d,s=G[i,]$s,n1=G[i,]$n1,cf=1,runs=runs,alpha=.025,beta=.2))})))
+
+runs <- 10^5
+bsim <- do.call(rbind,lapply(1:nrow(G),function(i) {c(G[i,],simMBIA(delta=G[i,]$delta,sigma=G[i,]$sigma,n1=dsim[i,]$n1,runs=runs))}))
+
+load('fallback.rda')
+bsim <- as.data.frame(apply(bsim,2,unlist),row.names=NA)
+
 pN <- 2*ceiling(zss(s,d,alpha,beta))
+
+gsim <- as.data.frame(t(apply(casesim,1,unlist)))
+
+gsim$var.rbias <- gsim$variance.bias/gsim$sigma^2
+gsim$bound <- lowerBound(gsim$n1,gsim$d)
+gsim$mean.upper.bias <- bsim$m.bias
+gsim$mean.lower.bias <- bsim$m.bias.n
+casesim <- gsim
+
+
 print(fname <- paste('casesim_',format(Sys.time(),"%y%m%d"),'.Rd',sep=''))
 save(casesim,file=fname)
 
@@ -53,26 +88,10 @@ save(casesim,file=fname)
 
 \section{Case study}
 
-The next chunk sets up the basic parameters taken from
-\cite{kieser2003}. 
 
-<<setting,include=F>>=
-
-alpha = 0.025
-beta = 0.2
-d = 5.5
-s = 8
-
-n1 <- 15
-s1o <- 6
-s1a <- 5.3
-
-@ 
-
-
-As an example \cite{kieser2003} present the trial reported in
-\cite{malsch2001}, which is a randomized placebo controlled trial of
-the efficacy of the kava-kava special extract "WS$^\textregistered$
+As an example \cite{Kieser03} present the trial reported in
+\cite{Malsch01}, which is a randomized placebo controlled trial of
+the efficacy of the kava-kava special extract "WS$^{\textregistered}$
 1490" for the treatment of anxiety. The primary endpoint of the study
 was the change in the Hamilton Anxiety Scale (HAMA) between baseline
 and end of treatment. Assuming a mean difference between treatment and
@@ -93,25 +112,19 @@ data('casesim')
 
 
 require(ggplot2)
-gsim <- as.data.frame(t(lapply(casesim,unlist)))
-gsim <- subset(gsim,sigma>0)
 
-gsim$var.rbias <- gsim$variance.bias/gsim$sigma^2
-gsim$bound <- lowerBound(gsim$n1,gsim$d)
-dsim <- gsim
+max.mean.bias <- max(casesim$mean.bias)
+uc.max.mean.bias <- max(casesim$uc.mean.bias)
+min.mean.bias <- min(casesim$mean.bias)
+uc.min.mean.bias <- min(casesim$uc.mean.bias)
 
-max.mean.bias <- max(dsim$mean.bias)
-uc.max.mean.bias <- max(dsim$uc.mean.bias)
-min.mean.bias <- min(dsim$mean.bias)
-uc.min.mean.bias <- min(dsim$uc.mean.bias)
-
-max.var.bias <- min(dsim$variance.bias)
-uc.max.var.bias <- min(dsim$uc.variance.bias)
+max.var.bias <- min(casesim$variance.bias)
+uc.max.var.bias <- min(casesim$uc.variance.bias)
 
 #$
 @ 
 
-\cite{kieser2003} assume that sample size reassessment based on
+\cite{Kieser03} assume that sample size reassessment based on
 blinded data is performed after $15$ patients per group and consider 
 that the interim estimate of the standard deviation is $S_{1,OS} =
 6$ and adjusting for $\delta_0 = 5.5$ gives
@@ -134,7 +147,7 @@ steps of $1$. Detailed results are shown in Figure \ref{fig:case}
 where we plot the coverage of the confidence intervals, bias of the
 mean, and variance estimate, and the average second stage sample
 size. The variance bias gets as low as
-$\Sexpr{round(uc.max.var.bias)}$, \ie it reaches the theoretical 
+$\Sexpr{round(uc.max.var.bias,2)}$, \ie it reaches the theoretical 
 boundary, if the true mean effect is $\delta =0$ and the true standard
 deviation $\sigma$ is larger than $8$. For smaller values of the true
 standard deviation the bias is smaller in magnitude. The mean bias
@@ -171,62 +184,61 @@ respectively.
 
 
 <<eval=T,echo=F>>=
-
-
 lverbose = function(variable,value){
     if(variable == "s"){
-        sapply(value,function(val) substitute(paste("s = ",foo,", ",n[1]," = ",n1,sep=''),list(foo=val,n1=ceiling((15/34)*zss(val,5.5,.025,.2)))))
+        sapply(value,function(val) substitute(paste(delta[0], " = 5.5, " ,sigma[0], " = ",foo,", ",sep=''),list(foo=val,n1=ceiling((15/34)*zss(val,5.5,.025,.2)))))
     } else {
         label_parsed(variable,label_both(variable,value))
     }
 }
 
-tdsim <- dsim
+tcasesim <- casesim
 
-dsim <- subset(tdsim, sigma %in% (c(1:5)*2) )
-tupd <- ggplot(dsim,mapping=aes(x=delta,y=.025-upper.prob)) +
+tcasesim <- subset(tcasesim, sigma %in% (c(1:5)*2) )
+tupd <- ggplot(tcasesim,mapping=aes(x=delta,y=.025-upper.prob)) +
     geom_line(y=0,colour='gray') +
     geom_path(lty=2) + #geom_point(shape='u') +
     geom_path(aes(y=.025-lower.prob),lty=3) + #geom_point(aes(y=.025-lower.prob),shape='l') +
     geom_path(aes(y=.05-total.prob)) + #geom_point(aes(y=.05-total.prob),shape='t') +
-    facet_grid(s~sigma,labeller=lverbose) + theme_bw() + ylim(-.02,.01) + xlab(expression(delta)) + ylab('actual - nominal coverage')
-tupd.uc <- ggplot(dsim,mapping=aes(x=delta,y=.025-uc.upper.prob)) +
+    facet_grid(s~sigma,labeller=lverbose) + theme_bw() + ylim(-.02,.01) + xlab(expression(delta)) + ylab('[%]')
+tupd.uc <- ggplot(tcasesim,mapping=aes(x=delta,y=.025-uc.upper.prob)) +
     geom_line(y=0,colour='gray') +
     geom_path(lty=2) + # geom_point(shape='u') +
     geom_path(aes(y=.025-uc.lower.prob),lty=3) + #geom_point(aes(y=.025-uc.lower.prob),shape='l') +
     geom_path(aes(y=.05-uc.total.prob)) + #geom_point(aes(y=.05-uc.total.prob),shape='t') +
-    facet_grid(s~sigma,labeller=lverbose) + theme_bw()+  ylim(-.02,.01) + xlab(expression(delta)) + ylab('actual -nominal coverage')
-tupd.variance.bias <- ggplot(dsim,mapping=aes(x=delta,y=variance.bias)) +
+    facet_grid(s~sigma,labeller=lverbose) + theme_bw()+  ylim(-.02,.01) + xlab(expression(delta)) + ylab('%-points')
+tupd.variance.bias <- ggplot(tcasesim,mapping=aes(x=delta,y=variance.bias)) +
     geom_line(y=0,colour='gray') + geom_path(aes(y=bound),color="red") +
   geom_path(lty=1) + geom_path(aes(y=uc.variance.bias),lty=2) +#geom_point(shape='V') + geom_point(aes(y=mean.bias),shape='M') +
-  facet_grid(s~sigma,labeller=lverbose) + theme_bw() + xlab(expression(delta)) + ylab('bias')+ggtitle('Variance Bias')
-tupd.mean.bias <- ggplot(dsim,mapping=aes(x=delta,y=mean.bias)) + geom_path(lty=1)+
-  geom_line(y=0,colour='gray') + # geom_path(aes(y=mean.upper.bias*sign(-delta)),lty=3,col='red')     
+  facet_grid(s~sigma,labeller=lverbose) + theme_bw() + xlab(expression(delta)) + ylab('Bias')
+tupd.mean.bias <- ggplot(tcasesim,mapping=aes(x=delta,y=mean.bias)) + geom_path(lty=1)+
+  geom_line(y=0,colour='gray') + geom_path(aes(y=mean.upper.bias),lty=3,col='red') + geom_path(aes(y=mean.lower.bias),lty=3,col='red') +
   geom_path(aes(y=uc.mean.bias),lty=2) +
-  facet_grid(s~sigma,labeller=lverbose) + theme_bw()  + xlab(expression(delta)) + ylab('bias') + ggtitle('Mean Bias') # +  ylim(-.2,.2)
-tupd.mean.bias.sem <- ggplot(dsim,mapping=aes(x=delta,y=mean.bias/(sigma/sqrt(n1)))) +
+  facet_grid(s~sigma,labeller=lverbose) + theme_bw()  + xlab(expression(delta)) + ylab('Bias') + ggtitle('Mean Bias') # +  ylim(-.2,.2)
+tupd.mean.bias.sem <- ggplot(tcasesim,mapping=aes(x=delta,y=mean.bias/(sigma/sqrt(n1)))) +
   geom_line(y=0,colour='gray') +  
-  geom_path(lty=1) + geom_path(aes(y=uc.mean.bias/(sigma/sqrt(n1))),lty=2) + #geom_path(aes(y=mean.upper.bias*sign(-delta)/(sigma/sqrt(n1))),lty=3,col='red')+#geom_point(shape='V') +geom_point(aes(y=uc.mean.bias),shape='M') +
+  geom_path(lty=1) + geom_path(aes(y=uc.mean.bias/(sigma/sqrt(n1))),lty=2) + 
   facet_grid(s~sigma,labeller=lverbose) + theme_bw() + xlab(expression(delta)) + ylab('bias')+ggtitle('Mean Bias (SEM Scaled)')
-tupd.ass <- ggplot(dsim,mapping=aes(x=delta,y=(mean.m1+n1))) +
+tupd.ass <- ggplot(tcasesim,mapping=aes(x=delta,y=(mean.m1+n1))) +
   geom_line(y=0,colour='gray') +  
   geom_path(lty=1) + geom_path(aes(y=uc.mean.m1+n1),lty=2) +#geom_point(shape='V') +geom_point(aes(y=uc.mean.bias),shape='M') +
-  facet_grid(s~sigma,labeller=lverbose) + theme_bw() + xlab(expression(delta)) + ylab('average sample size')+ggtitle('Average Second Stage Sample Size')
+  facet_grid(s~sigma,labeller=lverbose) + theme_bw() + xlab(expression(delta)) + ylab('ASN')+ggtitle('ASN')+ylim(0,70)
 
-pdf('casestudy.pdf')
-multiplot(tupd.mean.bias,tupd.variance.bias,tupd.ass)
-dev.off()
-
-
-
-delta=seq(0,2*delta,.25)
-res=vbias.sim(d=delta,n1=15,sig=8,runs=20000)
-plot(x=delta,res['m1',],type="l")
+multiplot(tupd,tupd.mean.bias,tupd.variance.bias,
+          titles=c("Actual - nominal coverage probabilities",
+              "Mean Bias",
+              "Variance Bias") #,
+                                        #"Average Sample Number")
+          )
 
 
 
 
 @ 
+
+\bibliography{imsrefsjoined}
+\bibliographystyle{plain}
+
 
 \end{document}
 
