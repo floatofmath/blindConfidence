@@ -19,7 +19,8 @@ installed from github using \texttt{install\_github} from package
 <<instalBT88,eval=F>>=
 
 library(devtools)
-install_github('floatofmath/bt88.03.704')
+install_github('bt88.03.704','floatofmath')
+install_github('blindConfidence','floatofmath')
 
 @ 
 
@@ -30,7 +31,7 @@ library(blindConfidence)
 library(parallel)
 library(ggplot2)
 library(bt88.03.704)
-options(mc.cores=pmax(1,detectCores()-2))
+options(mc.cores=pmax(1,detectCores()-20))
 
 @ 
 
@@ -51,6 +52,7 @@ s = 8
 n1 <- 15
 s1o <- 6
 s1a <- 5.3
+
 @
 
 <<Simulation,eval=F>>=
@@ -58,13 +60,13 @@ s1a <- 5.3
 set.seed(659376)
 G <- expand.grid(delta = round(seq(-2*d, 2*d,d/20),2),sigma = round(seq(1,20,1)),d=5.5,s=8,n1=15)
 
-runs=10^6
+runs=5*10^6
 casesim <- t(simplify2array(mclapply(1:nrow(G),function(i) {c(G[i,],simVBIA(delta=G[i,]$delta,sigma=G[i,]$sigma,d=G[i,]$d,s=G[i,]$s,n1=G[i,]$n1,cf=1,runs=runs,alpha=.025,beta=.2))})))
 
 runs <- 10^5
 bsim <- do.call(rbind,lapply(1:nrow(G),function(i) {c(G[i,],simMBIA(delta=G[i,]$delta,sigma=G[i,]$sigma,n1=dsim[i,]$n1,runs=runs))}))
 
-load('fallback.rda')
+#load('fallback.rda')
 bsim <- as.data.frame(apply(bsim,2,unlist),row.names=NA)
 
 pN <- 2*ceiling(zss(s,d,alpha,beta))
@@ -78,7 +80,7 @@ gsim$mean.lower.bias <- bsim$m.bias.n
 casesim <- gsim
 
 
-print(fname <- paste('casesim_',format(Sys.time(),"%y%m%d"),'.Rd',sep=''))
+print(fname <- paste('casesim_',format(Sys.time(),"%y%m%d-%H"),'.Rd',sep=''))
 save(casesim,file=fname)
 
 @
@@ -113,26 +115,56 @@ data('casesim')
 
 require(ggplot2)
 
-max.mean.bias <- max(casesim$mean.bias)
-uc.max.mean.bias <- max(casesim$uc.mean.bias)
-min.mean.bias <- min(casesim$mean.bias)
-uc.min.mean.bias <- min(casesim$uc.mean.bias)
 
-max.var.bias <- min(casesim$variance.bias)
-uc.max.var.bias <- min(casesim$uc.variance.bias)
+max.mean.bias <- which.max(casesim$mean.bias)
+uc.max.mean.bias <- which.max(casesim$uc.mean.bias)
+min.mean.bias <- which.min(casesim$mean.bias)
+uc.min.mean.bias <- which.min(casesim$uc.mean.bias)
 
-#$
+max.var.bias <- which.min(casesim$variance.bias)
+uc.max.var.bias <- which.min(casesim$uc.variance.bias)
+
+max.nc.upper <- which.max(casesim$upper.prob)
+max.nc.lower <- which.max(casesim$lower.prob)
+max.nc.total <- which.max(casesim$total.prob)
+uc.max.nc.upper <- which.max(casesim$uc.upper.prob)
+uc.max.nc.lower <- which.max(casesim$uc.lower.prob)
+uc.max.nc.total <- which.max(casesim$uc.total.prob)
+
+round(casesim[uc.max.nc.upper,'uc.upper.prob']-.025,3)
+round(casesim[uc.max.nc.lower,'uc.lower.prob']-.025,3)
+round(casesim[uc.max.nc.total,'uc.total.prob']-.05,3)
+
+round(casesim[max.nc.upper,'upper.prob']-.025,3)
+round(casesim[max.nc.lower,'lower.prob']-.025,3)
+round(casesim[max.nc.total,'total.prob']-.05,3)
+
+round(casesim[uc.max.nc.upper,'delta'])
+round(casesim[uc.max.nc.upper,'sigma'])
+round(casesim[uc.max.nc.lower,'delta'])
+round(casesim[uc.max.nc.lower,'sigma'])
+round(casesim[uc.max.nc.total,'delta'])
+round(casesim[uc.max.nc.total,'sigma'])
+
+round(casesim[max.nc.upper,'delta'])
+round(casesim[max.nc.upper,'sigma'])
+round(casesim[max.nc.lower,'delta'])
+round(casesim[max.nc.lower,'sigma'])
+round(casesim[max.nc.total,'delta'])
+round(casesim[max.nc.total,'sigma'])
+
+
 @ 
 
-\cite{Kieser03} assume that sample size reassessment based on
-blinded data is performed after $15$ patients per group and consider 
-that the interim estimate of the standard deviation is $S_{1,OS} =
-6$ and adjusting for $\delta_0 = 5.5$ gives
-$S_{1,OS,\delta_0}=5.3$. The corresponding updated sample sizes are
-then given by 19 and 15 patients (per group), respectively. In an
-unrestricted desgin, an additional 4 patients per group would have 
-been recruited based on $S_{1,OS}$; the trial would have been stopped
-early based on $S_{1,OS,\delta_0}$.
+\cite{Kieser03} assume that sample size reassessment based on blinded
+data is performed after $15$ patients per group and consider that the
+interim estimate of the standard deviation is $S_{1,OS} = 6$ and
+adjusting for $\delta_0 = 5.5$ gives $S_{1,OS,\delta_0}=5.3$. The
+corresponding updated sample sizes are then given by 19 and 15
+patients (per group), respectively. In an unrestricted desgin, an
+additional 4 patients per group would have been recruited based on
+$S_{1,OS}$; the trial would have been stopped early based on
+$S_{1,OS,\delta_0}$. 
 
 If the sample size reassessment is based on the unadjusted interim
 variance estimate $S_{1,OS}$, the variance estimate from the completed
@@ -140,46 +172,48 @@ trial will be negatively biased. Theorem \ref{the:bound} gives a lower
 bound for the magnitude of that bias which in this case is
 $\Sexpr{round(variance.bias,2)}$. We also performed a simulation
 study, similar to that of Section \ref{sec:simulation}, where we fix
-$\delta_0=5.5$ and $\sigma_0=8$ and $n_1=15$ - but not $S_{1,OS}$,
+$\delta_0=5.5$, $\sigma_0=8$ and $n_1=15$ - but not $S_{1,OS}$,
 $S_{1,OS,\delta_0}$ - and let $\delta$ vary from $-2\delta_0=-11$ to
 $2\delta_0=11$ in steps of $0.05$ and $\sigma$ from $1$ to $20$ in
 steps of $1$. Detailed results are shown in Figure \ref{fig:case}
-where we plot the coverage of the confidence intervals, bias of the
-mean, and variance estimate, and the average second stage sample
-size. The variance bias gets as low as
-$\Sexpr{round(uc.max.var.bias,2)}$, \ie it reaches the theoretical 
-boundary, if the true mean effect is $\delta =0$ and the true standard
-deviation $\sigma$ is larger than $8$. For smaller values of the true
-standard deviation the bias is smaller in magnitude. The mean bias
-goes up to $\Sexpr{round(uc.max.mean.bias,2)}$ for negative values of
-the true effect size and as low as $\Sexpr{round(uc.min.mean.bias,2)}$
-for positive values of the true effect size. Our simulations suggest that
-the maximum of the absolute bias is reached when the true standard
-deviation is close to the initial assumptions (\ie $\sigma \approx s =
-8$) and the true effect size is around plus or minus the initial
-effect size assumptions (\ie $\delta \approx -d = -5.5$ or $\delta
-\approx d = 5.5$). 
+where we plot the coverage of the confidence intervals and biases of
+the mean, and the variance estimate. The variance bias gets as low as
+$\Sexpr{round(casesim[uc.max.var.bias,'uc.variance.bias'],2)}$ if the
+true mean effect is $\delta =
+\Sexpr{round(casesim[uc.max.var.bias,'delta'],2)}$ and the true
+standard deviation $\sigma =
+\Sexpr{round(casesim[uc.max.var.bias,'sigma'])}$ (\ie it reaches the
+theoretical boundary within simulation error). For smaller values of
+the true standard deviation the bias is smaller in magnitude. The mean
+bias goes up to
+$\Sexpr{round(casesim[uc.max.mean.bias,'uc.mean.bias'],2)}$ for
+negative values of the true effect size and as low as
+$\Sexpr{round(casesim[uc.min.mean.bias,'uc.mean.bias'],2)}$ for
+positive values of the true effect size. The absolute bias reaches its
+maximum for a true mean differences of $\delta = \pm
+\Sexpr{round(casesim[uc.min.mean.bias,'delta'],2)}$) and standard
+deviation of $\sigma =
+\Sexpr{round(casesim[uc.min.mean.bias,'sigma'])}$). The maximum
+inflation of the coverage probabilities of one-sided $97.5\%$ and
+two-sided $95\%$ confidence intervals is
+$\Sexpr{100*round(casesim[uc.max.nc.upper,'uc.upper.prob']-.025,3)}$
+and
+$\Sexpr{100*round(casesim[uc.max.nc.total,'uc.total.prob']-.05,3)}$
+percentage points, respectively. The actual coverage probabilities are
+smallest for large absolute values of the true mean difference and
+standard deviations of around $5$.
 
 If the sample size reassessment is based on the adjusted variance
 estimate, the absolute bias of the variance and mean estimate will be
-even larger taking values up to $\Sexpr{round(max.var.bias,2)}$ for the
-variance and up to $\Sexpr{round(max.mean.bias,2)}$ for the mean,
-respectively. 
-
-% In terms of coverage probabilities for the confidence interval around
-% the mean estimate our simulation results show 
-
-
-% In Figure bla. 
-
-
-
-% In a systematic review Pittler report observerd mean differences
-% between $4$ and $17$ with standard deviations between $3$ and $5$
-
-% \Section{Appendix: Detailed results for the case study}
-% \label{sec:app}
-
+even larger taking values up to $\Sexpr{abs(round(casesim[max.var.bias,'variance.bias'],2))}$ for the
+variance and up to $\Sexpr{round(casesim[max.mean.bias,'mean.bias'],2)}$ for the mean,
+respectively. The inflation of the coverage probabilities goes up to
+$\Sexpr{100*round(casesim[max.nc.upper,'upper.prob']-.025,3)}$
+percentage points for the
+one-sided confidence intervals and
+$\Sexpr{100*round(casesim[max.nc.total,'total.prob']-.05,3)}$
+percentage points for the
+two-sided intervals. 
 
 
 
@@ -200,7 +234,7 @@ tupd <- ggplot(tcasesim,mapping=aes(x=delta,y=.025-upper.prob)) +
     geom_path(lty=2) + #geom_point(shape='u') +
     geom_path(aes(y=.025-lower.prob),lty=3) + #geom_point(aes(y=.025-lower.prob),shape='l') +
     geom_path(aes(y=.05-total.prob)) + #geom_point(aes(y=.05-total.prob),shape='t') +
-    facet_grid(s~sigma,labeller=lverbose) + theme_bw() + ylim(-.02,.01) + xlab(expression(delta)) + ylab('[%]')
+    facet_grid(s~sigma,labeller=lverbose) + theme_bw() + ylim(-.02,.01) + xlab(expression(delta)) + ylab('%-points')
 tupd.uc <- ggplot(tcasesim,mapping=aes(x=delta,y=.025-uc.upper.prob)) +
     geom_line(y=0,colour='gray') +
     geom_path(lty=2) + # geom_point(shape='u') +
@@ -209,11 +243,11 @@ tupd.uc <- ggplot(tcasesim,mapping=aes(x=delta,y=.025-uc.upper.prob)) +
     facet_grid(s~sigma,labeller=lverbose) + theme_bw()+  ylim(-.02,.01) + xlab(expression(delta)) + ylab('%-points')
 tupd.variance.bias <- ggplot(tcasesim,mapping=aes(x=delta,y=variance.bias)) +
     geom_line(y=0,colour='gray') + geom_path(aes(y=bound),color="red") +
-  geom_path(lty=1) + geom_path(aes(y=uc.variance.bias),lty=2) +#geom_point(shape='V') + geom_point(aes(y=mean.bias),shape='M') +
+  geom_path(lty=2) + geom_path(aes(y=uc.variance.bias),lty=1) +#geom_point(shape='V') + geom_point(aes(y=mean.bias),shape='M') +
   facet_grid(s~sigma,labeller=lverbose) + theme_bw() + xlab(expression(delta)) + ylab('Bias')
-tupd.mean.bias <- ggplot(tcasesim,mapping=aes(x=delta,y=mean.bias)) + geom_path(lty=1)+
+tupd.mean.bias <- ggplot(tcasesim,mapping=aes(x=delta,y=mean.bias)) + geom_path(lty=2)+
   geom_line(y=0,colour='gray') + geom_path(aes(y=mean.upper.bias),lty=3,col='red') + geom_path(aes(y=mean.lower.bias),lty=3,col='red') +
-  geom_path(aes(y=uc.mean.bias),lty=2) +
+  geom_path(aes(y=uc.mean.bias),lty=1) +
   facet_grid(s~sigma,labeller=lverbose) + theme_bw()  + xlab(expression(delta)) + ylab('Bias') + ggtitle('Mean Bias') # +  ylim(-.2,.2)
 tupd.mean.bias.sem <- ggplot(tcasesim,mapping=aes(x=delta,y=mean.bias/(sigma/sqrt(n1)))) +
   geom_line(y=0,colour='gray') +  
@@ -224,7 +258,7 @@ tupd.ass <- ggplot(tcasesim,mapping=aes(x=delta,y=(mean.m1+n1))) +
   geom_path(lty=1) + geom_path(aes(y=uc.mean.m1+n1),lty=2) +#geom_point(shape='V') +geom_point(aes(y=uc.mean.bias),shape='M') +
   facet_grid(s~sigma,labeller=lverbose) + theme_bw() + xlab(expression(delta)) + ylab('ASN')+ggtitle('ASN')+ylim(0,70)
 
-multiplot(tupd,tupd.mean.bias,tupd.variance.bias,
+multiplot(tupd.uc,tupd.mean.bias,tupd.variance.bias,
           titles=c("Actual - nominal coverage probabilities",
               "Mean Bias",
               "Variance Bias") #,
