@@ -350,10 +350,11 @@ cond.bias <- function(S1os,n1,delta,sigma){
     F1 <- function(x,S1os,n1,delta,sigma)
         dnorm(x,delta,sqrt({2*sigma^2}/n1)) * dchisq((S1os*(2*n1-1) - {x^2*n1/2})/(sigma^2),2*n1-2)
     b <- sqrt(2*S1os*(2*n1 - 1)/n1)
-    K <- integrate(F1,-b,b,S1os=S1os,n1=n1,delta=delta,sigma=sigma)$value
+    K <- try(integrate(F1,-b,b,S1os=S1os,n1=n1,delta=delta,sigma=sigma,rel.tol=.Machine$double.eps,stop.on.error=FALSE)$value)
     F2 <- function(x,S1os,n1,delta,sigma)
         x*F1(x,S1os=S1os,n1=n1,delta=delta,sigma=sigma)
-    Em <- integrate(F2,-b,b,S1os=S1os,n1=n1,delta=delta,sigma=sigma)$value/K
+    Em <- try(integrate(F2,-b,b,S1os=S1os,n1=n1,delta=delta,sigma=sigma,rel.tol=.Machine$double.eps,stop.on.error=FALSE)$value)
+    Em <- Em/K
     Em-delta
 }
 
@@ -384,7 +385,7 @@ simMBIA <- function(delta=0,n1=2,sigma=1,runs=100)
   ## interim variance estimate
   S1os=(sa+sb+(n1/2)*md^2)/(2*n1-1)
   ## expected bias
-  biasv=simplify2array(lapply(S1os,cond.bias,n1=n1,delta=delta,sigma=sigma))
+  biasv=simplify2array(lapply(S1os,Dcond.bias,n1=n1,delta=delta,sigma=sigma))
   
   ## if the expected bias is positive stop otherwise make second stage infinitely large
   est1=ifelse(biasv>0,md-delta,0)
