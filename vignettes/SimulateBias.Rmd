@@ -20,7 +20,8 @@ options(mc.cores=detectCores()-2)
 ```
 
 ```{r}
-G <- expand.grid(delta=round(seq(-2,2,.2),2),sigma=round(seq(.5,3,.5),2),d = c(.2,.6,1,2), s = round(seq(.5,3,.5),2))
+G <- expand.grid(delta=round(seq(-2,2,.2),2),sigma=round(c(.1,.25,seq(.5,2,.5)),2),d = c(.2,.6,1,2), s = round(seq(.5,2,.5),2))
+G$n1 <- ceiling(1/2*zss(G$s,G$d,.025,.2))
 ```
 
 We assume that the pre-planned sample size of the trial was planned
@@ -34,7 +35,7 @@ scenario and the code is available as supplementary material.
 
 ```{r,eval=FALSE}
 set.seed(50014056)
-runs <- 10^6
+runs <- 10^5
 gridsim <- t(simplify2array(mclapply(1:nrow(G),function(i) {c(G[i,],simVBIA(delta=G[i,]$delta,sigma=G[i,]$sigma,d=G[i,]$d,s=G[i,]$s,cf=1,runs=runs,alpha=.025,beta=.2))})))
 
 
@@ -43,26 +44,19 @@ gsim <- as.data.frame(t(apply(gridsim,1,unlist)))
 ## compute relative bias
 gsim$var.rbias <- gsim$variance.bias/gsim$sigma^2
 
-## recompute the first stage sample size that was used
-gsim$n1 <- ceiling(1/2*zss(gsim$s,gsim$d,.025,.2))
 ## compute the theoretical lower bound for the variance bias
 gsim$bound <- lowerBound(gsim$n1,gsim$d)
 
-## reduce the number of scenarios
-dsim <- subset(gsim,sigma %in% c(.5,1,1.5,2) & d %in% c(1) & s %in% c(.5,1,1.5,2))
-
-
-D <- subset(G,sigma %in% c(.5,1,1.5,2) & d %in% c(1) & s %in% c(.5,1,1.5,2))
-runs <- 10^5
-bsim <- do.call(rbind,lapply(1:nrow(G),function(i) {c(G[i,],simMBIA(delta=G[i,]$delta,sigma=G[i,]$sigma,n1=dsim[i,]$n1,runs=runs))}))
+runs <- 10^4
+bsim <- do.call(rbind,mclapply(1:nrow(gsim),function(i) {c(gsim[i,],simMBIA(delta=gsim[i,]$delta,sigma=gsim[i,]$sigma,n1=gsim[i,]$n1,runs=runs))}))
 
 bsim <- as.data.frame(apply(bsim,1,unlist),row.names=NA)
 bsim <- as.data.frame(apply(bsim,1,unlist),row.names=NA)
 
-dsim$mean.upper.bias <- bsim[,5]
-dsim$mean.lower.bias <- bsim[,6]
+gsim$mean.upper.bias <- bsim[,5]
+gsim$mean.lower.bias <- bsim[,6]
 
-gridsim <- dsim
+gridsim <- gsim
 
 ```
 We computed the simulation results shown in the final manuscript
@@ -82,6 +76,9 @@ package.
 
 ```{r}
 data(gridsim)
+full.sim <- gridsim
+gridsim <- subset(full.sim,d==1)
+
 ```
 
 ```{r}

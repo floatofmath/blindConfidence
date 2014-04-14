@@ -384,7 +384,7 @@ simMBIA <- function(delta=0,n1=2,sigma=1,runs=100)
   ## interim variance estimate
   S1os=(sa+sb+(n1/2)*md^2)/(2*n1-1)
   ## expected bias
-  biasv=simplify2array(mclapply(S1os,cond.bias,n1=n1,delta=delta,sigma=sigma))
+  biasv=simplify2array(lapply(S1os,cond.bias,n1=n1,delta=delta,sigma=sigma))
   
   ## if the expected bias is positive stop otherwise make second stage infinitely large
   est1=ifelse(biasv>0,md-delta,0)
