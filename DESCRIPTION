@@ -1,6 +1,6 @@
 Package: blindConfidence
-Version: 0.0-1
-Date: 2014-25-02
+Version: 0.1
+Date: 2014-05-16
 Title: Simulation of estimation after blinded interim analysis
 Authors@R: c(person("float", "Developer", role = c("aut", "cre"),
     email = "florian.klinglmueller@meduniwien.ac.at"))
