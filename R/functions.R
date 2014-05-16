@@ -12,7 +12,7 @@
 #' zss(1,.5,.025,.2)
 #' @export
 zss <- function(s,d,alpha,beta){
-  2 * s^2 / d^2 * (qnorm(alpha,lower=FALSE)+qnorm(beta,lower=FALSE))^2
+  2 * s^2 / d^2 * (qnorm(alpha,lower.tail=FALSE)+qnorm(beta,lower.tail=FALSE))^2
 }
 
 #' Compute standard deviation from planned first stage sample size
@@ -33,7 +33,7 @@ zss <- function(s,d,alpha,beta){
 #' @export
 zsd <- function(n1,d,v = 1/2,alpha,beta){
     n <- n1/(v*2)
-    sqrt(n * d^2 / ((qnorm(alpha,lower=FALSE)+qnorm(beta,lower=FALSE))^2))
+    sqrt(n * d^2 / ((qnorm(alpha,lower.tail=FALSE)+qnorm(beta,lower.tail=FALSE))^2))
 }
 
 
@@ -108,7 +108,7 @@ simVBIA <- function(delta, # true effect size
                    ...){
   ## pre-compute t-distribution quantiles
   qttable=qt(1-alpha,1:1000)
-  xi=(qnorm(alpha,lower=FALSE)+qnorm(beta,lower=FALSE))^2/d^2
+  xi=(qnorm(alpha,lower.tail=FALSE)+qnorm(beta,lower.tail=FALSE))^2/d^2
 
   ## total first stage sample size
   n=n1+n2 
@@ -116,16 +116,16 @@ simVBIA <- function(delta, # true effect size
 
   ## simulated first stage means and sum of squares
   ## group 1
-  x1=rnorm(runs,s=sigma/sqrt(n1))
+  x1=rnorm(runs,sd=sigma/sqrt(n1))
 
   ## here we also generate a second independent first stage
   ## this is used for code testing purposes as estimates using
   ## these values should be unbiased, and if not point to errors
   ## in the calculation
-  x1r=rnorm(runs,s=sigma/sqrt(n1))
+  x1r=rnorm(runs,sd=sigma/sqrt(n1))
   ## group 2
-  x2=rnorm(runs,m=delta,s=sigma/sqrt(n2))
-  x2r=rnorm(runs,m=delta,s=sigma/sqrt(n2))
+  x2=rnorm(runs,mean=delta,sd=sigma/sqrt(n2))
+  x2r=rnorm(runs,mean=delta,sd=sigma/sqrt(n2))
 
   ## sum of squares
   ## group 1
@@ -171,10 +171,10 @@ simVBIA <- function(delta, # true effect size
   m2u=m1u
 
   ## secondstage means
-  y1=rnorm(runs,s=sigma/sqrt(m1))
-  y2=rnorm(runs,s=sigma/sqrt(m2),m=delta)
-  y1u=rnorm(runs,s=sigma/sqrt(m1u))
-  y2u=rnorm(runs,s=sigma/sqrt(m2u),m=delta)
+  y1=rnorm(runs,sd=sigma/sqrt(m1))
+  y2=rnorm(runs,sd=sigma/sqrt(m2),mean=delta)
+  y1u=rnorm(runs,sd=sigma/sqrt(m1u))
+  y2u=rnorm(runs,sd=sigma/sqrt(m2u),mean=delta)
   
   # set the  means to zero if second stage sample size is 0 
   y1[m1<1]=0 
