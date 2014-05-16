@@ -89,7 +89,7 @@ zsd <- function(n1,d,v = 1/2,alpha,beta){
 #' \item{uc.n10}{Probability that the second stage sample size is zero}
 #' \item{tn1 = mean(n1)}
 #' @examples
-#' simVBIA(.5,1,1,runs=10^3)
+#' simVBIA(.5,1,1,n1=10,n2min=2,runs=10^3)
 #' @export
 simVBIA <- function(delta, # true effect size
                    sigma, # true standard deviation
@@ -104,7 +104,6 @@ simVBIA <- function(delta, # true effect size
                    n2min = 0, # minimum secondstage sample size
                    testdata = FALSE, #  
                    fulldata = FALSE, #  
-                   wurzel = FALSE, #  
                    cf = 0, #  
                    ...){
   ## pre-compute t-distribution quantiles
@@ -396,6 +395,9 @@ simMBIA <- function(delta=0,n1=2,sigma=1,runs=100)
   c(m.bias = mean(est1),
     m.bias.n = mean(est2))
 }
+
+#compMBIA <- function(delta=0,n1=2,sigma=1,runs=100)
+    
 
 #' Simulation results from "Estimation after blinded interim analyses"
 #'

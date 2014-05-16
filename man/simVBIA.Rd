@@ -4,8 +4,7 @@
 \usage{
 simVBIA(delta, sigma, d, alpha = 0.025, beta = 0.2, v = 1/2, s = zsd(n1,
   d, v, alpha, beta), n1 = ceiling(v * zss(s, d, alpha, beta)), runs,
-  n2 = n1, n2min = 0, testdata = FALSE, fulldata = FALSE,
-  wurzel = FALSE, cf = 0, ...)
+  n2 = n1, n2min = 0, testdata = FALSE, fulldata = FALSE, cf = 0, ...)
 }
 \arguments{
   \item{delta}{true effect size}
@@ -82,6 +81,6 @@ variance that is adjusted based on the assumed effect size
 or the uncorrected lumped variance.
 }
 \examples{
-simVBIA(.5,1,1,runs=10^3)
+simVBIA(.5,1,1,n1=10,n2min=2,runs=10^3)
 }
 
