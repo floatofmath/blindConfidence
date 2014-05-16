@@ -31,7 +31,7 @@ library(blindConfidence)
 library(parallel)
 library(ggplot2)
 library(bt88.03.704)
-options(mc.cores=pmax(1,detectCores()-20))
+options(mc.cores=pmax(1,detectCores()-2))
 
 @ 
 
@@ -78,7 +78,7 @@ gsim$bound <- lowerBound(gsim$n1,gsim$d)
 gsim$mean.upper.bias <- bsim$m.bias
 gsim$mean.lower.bias <- bsim$m.bias.n
 casesim <- gsim
-
+casesim$brannath <- .4*sqrt(2)*casesim$sigma/sqrt(casesim$n1)
 
 print(fname <- paste('casesim_',format(Sys.time(),"%y%m%d-%H"),'.Rd',sep=''))
 save(casesim,file=fname)
@@ -131,29 +131,6 @@ uc.max.nc.upper <- which.max(casesim$uc.upper.prob)
 uc.max.nc.lower <- which.max(casesim$uc.lower.prob)
 uc.max.nc.total <- which.max(casesim$uc.total.prob)
 
-round(casesim[uc.max.nc.upper,'uc.upper.prob']-.025,3)
-round(casesim[uc.max.nc.lower,'uc.lower.prob']-.025,3)
-round(casesim[uc.max.nc.total,'uc.total.prob']-.05,3)
-
-round(casesim[max.nc.upper,'upper.prob']-.025,3)
-round(casesim[max.nc.lower,'lower.prob']-.025,3)
-round(casesim[max.nc.total,'total.prob']-.05,3)
-
-round(casesim[uc.max.nc.upper,'delta'])
-round(casesim[uc.max.nc.upper,'sigma'])
-round(casesim[uc.max.nc.lower,'delta'])
-round(casesim[uc.max.nc.lower,'sigma'])
-round(casesim[uc.max.nc.total,'delta'])
-round(casesim[uc.max.nc.total,'sigma'])
-
-round(casesim[max.nc.upper,'delta'])
-round(casesim[max.nc.upper,'sigma'])
-round(casesim[max.nc.lower,'delta'])
-round(casesim[max.nc.lower,'sigma'])
-round(casesim[max.nc.total,'delta'])
-round(casesim[max.nc.total,'sigma'])
-
-
 @ 
 
 \cite{Kieser03} assume that sample size reassessment based on blinded
@@ -171,7 +148,7 @@ variance estimate $S_{1,OS}$, the variance estimate from the completed
 trial will be negatively biased. Theorem \ref{the:bound} gives a lower
 bound for the magnitude of that bias which in this case is
 $\Sexpr{round(variance.bias,2)}$. We also performed a simulation
-study, similar to that of Section \ref{sec:simulation}, where we fix
+study, similar to that of Section 4 in the paper, where we fix
 $\delta_0=5.5$, $\sigma_0=8$ and $n_1=15$ - but not $S_{1,OS}$,
 $S_{1,OS,\delta_0}$ - and let $\delta$ vary from $-2\delta_0=-11$ to
 $2\delta_0=11$ in steps of $0.05$ and $\sigma$ from $1$ to $20$ in
@@ -220,35 +197,35 @@ two-sided intervals.
 <<eval=T,echo=F>>=
 lverbose = function(variable,value){
     if(variable == "s"){
-        sapply(value,function(val) substitute(paste(delta[0], " = 5.5, " ,sigma[0], " = ",foo,", ",sep=''),list(foo=val,n1=ceiling((15/34)*zss(val,5.5,.025,.2)))))
+        sapply(value,function(val) substitute(paste(delta[0], " = 5.5, " ,sigma[0], " = ",foo,sep=''),list(foo=val,n1=ceiling((15/34)*zss(val,5.5,.025,.2)))))
     } else {
-        label_parsed(variable,label_both(variable,value))
+        sapply(value,function(val) substitute(paste(sigma," = ",foo,sep=""),list(foo=val)))#label_parsed(variable,label_both(variable,value))
     }
 }
 
 tcasesim <- casesim
 
-tcasesim <- subset(tcasesim, sigma %in% (c(1:5)*2) )
+tcasesim <- subset(tcasesim, sigma %in% c(1,5,10,15,20)) 
 tupd <- ggplot(tcasesim,mapping=aes(x=delta,y=.025-upper.prob)) +
     geom_line(y=0,colour='gray') +
     geom_path(lty=2) + #geom_point(shape='u') +
     geom_path(aes(y=.025-lower.prob),lty=3) + #geom_point(aes(y=.025-lower.prob),shape='l') +
     geom_path(aes(y=.05-total.prob)) + #geom_point(aes(y=.05-total.prob),shape='t') +
-    facet_grid(s~sigma,labeller=lverbose) + theme_bw() + ylim(-.02,.01) + xlab(expression(delta)) + ylab('%-points')
+    facet_grid(s~sigma,labeller=lverbose) + theme_bw() + ylim(-.02,.01) + xlab(expression(delta)) + ylab('AC-NC')
 tupd.uc <- ggplot(tcasesim,mapping=aes(x=delta,y=.025-uc.upper.prob)) +
     geom_line(y=0,colour='gray') +
     geom_path(lty=2) + # geom_point(shape='u') +
     geom_path(aes(y=.025-uc.lower.prob),lty=3) + #geom_point(aes(y=.025-uc.lower.prob),shape='l') +
     geom_path(aes(y=.05-uc.total.prob)) + #geom_point(aes(y=.05-uc.total.prob),shape='t') +
-    facet_grid(s~sigma,labeller=lverbose) + theme_bw()+  ylim(-.02,.01) + xlab(expression(delta)) + ylab('%-points')
+    facet_grid(s~sigma,labeller=lverbose) + theme_bw()+  ylim(-.02,.01) + xlab(expression(delta)) + ylab('AC-NC')
 tupd.variance.bias <- ggplot(tcasesim,mapping=aes(x=delta,y=variance.bias)) +
     geom_line(y=0,colour='gray') + geom_path(aes(y=bound),color="red") +
   geom_path(lty=2) + geom_path(aes(y=uc.variance.bias),lty=1) +#geom_point(shape='V') + geom_point(aes(y=mean.bias),shape='M') +
   facet_grid(s~sigma,labeller=lverbose) + theme_bw() + xlab(expression(delta)) + ylab('Bias')
 tupd.mean.bias <- ggplot(tcasesim,mapping=aes(x=delta,y=mean.bias)) + geom_path(lty=2)+
   geom_line(y=0,colour='gray') + geom_path(aes(y=mean.upper.bias),lty=3,col='red') + geom_path(aes(y=mean.lower.bias),lty=3,col='red') +
-  geom_path(aes(y=uc.mean.bias),lty=1) +
-  facet_grid(s~sigma,labeller=lverbose) + theme_bw()  + xlab(expression(delta)) + ylab('Bias') + ggtitle('Mean Bias') # +  ylim(-.2,.2)
+  geom_path(aes(y=uc.mean.bias),lty=1) + geom_path(aes(y=brannath),lty=3,col='darkgreen') + geom_path(aes(y=-brannath),lty=3,col='darkgreen') +
+  facet_grid(s~sigma,labeller=lverbose) + theme_bw()  + xlab(expression(delta)) + ylab('Bias') + ggtitle('Mean Bias') +  ylim(-1.5,1.5)
 tupd.mean.bias.sem <- ggplot(tcasesim,mapping=aes(x=delta,y=mean.bias/(sigma/sqrt(n1)))) +
   geom_line(y=0,colour='gray') +  
   geom_path(lty=1) + geom_path(aes(y=uc.mean.bias/(sigma/sqrt(n1))),lty=2) + 
@@ -257,18 +234,20 @@ tupd.ass <- ggplot(tcasesim,mapping=aes(x=delta,y=(mean.m1+n1))) +
   geom_line(y=0,colour='gray') +  
   geom_path(lty=1) + geom_path(aes(y=uc.mean.m1+n1),lty=2) +#geom_point(shape='V') +geom_point(aes(y=uc.mean.bias),shape='M') +
   facet_grid(s~sigma,labeller=lverbose) + theme_bw() + xlab(expression(delta)) + ylab('ASN')+ggtitle('ASN')+ylim(0,70)
+@ 
 
+<<echo=F,>>=
+## this chunk produces the file that goes into the paper
 multiplot(tupd.uc,tupd.mean.bias,tupd.variance.bias,
-          titles=c("Actual - nominal coverage probabilities",
+          titles=c(expression(paste("Actual - nominal coverage probabilities (",n[2]^u,")")),
+              #expression(paste("Actual-nominal coverage probabilities (",n[2]^a,")")),
               "Mean Bias",
               "Variance Bias") #,
                                         #"Average Sample Number")
           )
-
-
-
-
 @ 
+
+
 
 \bibliography{imsrefsjoined}
 \bibliographystyle{plain}
@@ -277,42 +256,16 @@ multiplot(tupd.uc,tupd.mean.bias,tupd.variance.bias,
 \end{document}
 
 
+
 <<eval=F,echo=F>>=
-n1 <- 15
-X <- replicate(1000,rnorm(n1))
-Y <- replicate(1000,rnorm(n1))
-Xm <- colMeans(X)
-Ym <- colMeans(Y)
-md <- Xm-Ym
-Xc <- sweep(X,2,Xm)
-Yc <- sweep(Y,2,Ym)
-Xs <- colSums(Xc^2)
-Ys <- colSums(Yc^2)
-XYm <- colMeans(rbind(X,Y))
-XYc <- sweep(rbind(X,Y),2,XYm)
-XYs <- colSums(XYc^2)/(2*n1-1)
-XYs - (Xs + Ys + (n1/2)*md^2)/(2*n1-1)
-
-
-@ 
-
-<<eval=F,include=F,echo=F>>=
-
-v <- expand.grid(delta=seq(0,2*d,length.out=200),sigma=seq(1,20,length.out=200))
-
-mean.bias <- mclapply(1:nrow(v),function(i) c(v[i,],cond.bias(s1o,n1,delta=v[i,1],sigma=v[i,2])))
-
-mean.bias <- lapply(mean.bias,unlist)
-mean.bias <- as.data.frame(do.call(rbind,mean.bias))
-colnames(mean.bias)[3] <- 'bias'
-
-
-f <- ggplot(mean.bias,aes(x=sigma,y=delta,z=bias))+ geom_tile(aes(fill=bias)) + stat_contour(aes(colour=..level..)) + scale_fill_gradient(low='red',high='green')
-direct.label(f)
-
-out <- matrix(mean.bias$bias,ncol=length(unique(mean.bias$sigma)),
-              nrow=length(unique(mean.bias$delta)))
-pdf('persmb.pdf')
-persp(unique(mean.bias$delta),unique(mean.bias$sigma),out,theta=130,phi=20,xlab=expression(delta),ylab=expression(sigma),zlab="Expected Bias")
+## this chunk produces the file that goes into the paper
+cairo_ps('case.eps',height=7,width=7)
+multiplot(tupd.uc,tupd.mean.bias,tupd.variance.bias,
+          titles=c(expression(paste("Actual - nominal coverage probabilities (",n[2]^u,")")),
+              #expression(paste("Actual-nominal coverage probabilities (",n[2]^a,")")),
+              "Mean Bias",
+              "Variance Bias") #,
+                                        #"Average Sample Number")
+          )
 dev.off()
 @ 

@@ -54,6 +54,7 @@ bsim <- do.call('cbind',bsim)
 bsim <- as.data.frame(apply(bsim,1,unlist),row.names=NA)
 
 gridsim <- bsim
+gridsim$brannath <- .4*sqrt(2)*gridsim$sigma/sqrt(gridsim$n1)
 
 ```
 We computed the simulation results shown in the final manuscript
@@ -63,7 +64,7 @@ each scenario.
 
 
 ```{r,eval=FALSE,echo=FALSE}
-fname <- paste('~/gridsim_',format(Sys.time(),"%y%m%d"),'.Rd',sep='')
+fname <- paste('gridsim_',format(Sys.time(),"%y%m%d"),'.Rd',sep='')
 save(gridsim,file=fname)
 ```
 
@@ -75,13 +76,12 @@ package.
 data(gridsim)
 
 full.sim <- gridsim
-gridsim <- subset(full.sim,d==1)
+
+gridsim <- subset(full.sim,d==1 & sigma>=.5)
+
 
 ```
 
-```{r}
-
-```
 In fact the scenarios shown in the article comprise just a subset of
 the scenarios computed in the simulation. 
 
@@ -91,21 +91,21 @@ between the following values of design parameters:
 ```{r,echo=F,results='asis'}
 cat("<dl>\n")
 for(i in c('delta','sigma','d','s')){
-   cat("<dt>",i,"</dt>\n","<dd>",unique(gsim[,i]),"</dd>\n")
+   cat("<dt>",i,"</dt>\n","<dd>",unique(gridsim[,i]),"</dd>\n")
    }
 cat("</dl>")
 ```
 
-This little function takes care of annotating the plots.
 
-```{r,results='hide'}
 
+```{r,results='hide',include=F,echo=F}
+#This little function takes care of annotating the plots.
 lverbose = function(variable,value){
     if(variable == "s"){
         sapply(value,function(val) substitute(paste(sigma[0]," = ",foo,", ",n[1]," = ",n1,sep=''),
                                               list(foo=val,n1=ceiling(1/2*zss(val,1,.025,.2)))))
     } else {
-        label_parsed(variable,label_both(variable,value))
+        sapply(value,function(val) substitute(paste(sigma," = ",foo,sep=""),list(foo=val)))
     }
 }
 
@@ -119,30 +119,30 @@ interim variance estimate. Negative values correspond to situations
 where the actual coverage is smaller than the nominal coverage. In
 this case the coresponding confidence intervals become liberal. 
 
-```{r}
 
+```{r,results='hide',include=F,echo=F}
 tupd <- ggplot(gridsim,mapping=aes(x=delta,y=.025-upper.prob)) +
     geom_line(y=0,colour='gray') +
-    geom_path(lty=2) + #geom_point(shape='u') +
-    geom_path(aes(y=.025-lower.prob),lty=3) + #geom_point(aes(y=.025-lower.prob),shape='l') +
-    geom_path(aes(y=.05-total.prob)) + #geom_point(aes(y=.05-total.prob),shape='t') +
+    geom_path(lty=2) + 
+    geom_path(aes(y=.025-lower.prob),lty=3) + 
+    geom_path(aes(y=.05-total.prob)) + 
     facet_grid(sigma~s,labeller=lverbose) + theme_bw() + ylim(-.025,.01) +
     xlab(expression(delta)) + ylab('actual - nominal coverage')
-
 print(tupd)
 
 ```
 Then also for designs that use the unadjusted lumped variance at
 interim.
 
-```{r}
+```{r,results='hide',include=F,echo=F}
 
 tupd.uc <- ggplot(gridsim,mapping=aes(x=delta,y=.025-uc.upper.prob)) +
     geom_line(y=0,colour='gray') +
-    geom_path(lty=2) + # geom_point(shape='u') +
-    geom_path(aes(y=.025-uc.lower.prob),lty=3) + #geom_point(aes(y=.025-uc.lower.prob),shape='l') +
-    geom_path(aes(y=.05-uc.total.prob)) + #geom_point(aes(y=.05-uc.total.prob),shape='t') +
-    facet_grid(sigma~s,labeller=lverbose) + theme_bw()+  ylim(-.025,.01) + xlab(expression(delta)) + ylab('actual -nominal coverage')
+    geom_path(lty=2) + 
+    geom_path(aes(y=.025-uc.lower.prob),lty=3) + 
+    geom_path(aes(y=.05-uc.total.prob)) + 
+    facet_grid(sigma~s,labeller=lverbose) + theme_bw()+
+    ylim(-.025,.01) + xlab(expression(delta)) + ylab('actual -nominal coverage')
 print(tupd.uc)
 
 ```
@@ -154,12 +154,17 @@ unadjusted interim variance estimate. The dotted lines show the
 bias of the mean estimate using a samplesize reassessment rule is used
 in order to maximize the negative or positive bias, respectively.
 
-```{r}
+```{r,results='hide',include=F,echo=F}
 
-tupd.mean.bias <- ggplot(gridsim,mapping=aes(x=delta,y=mean.bias)) + geom_path(lty=2)+
-  geom_line(y=0,colour='gray') + geom_path(aes(y=m.bias),lty=3,col='red') + geom_path(aes(y=m.bias.n),lty=3,col='red') +  geom_path(aes(y=uc.mean.bias),lty=1) +
-  facet_grid(sigma~s,labeller=lverbose) + theme_bw()  + xlab(expression(delta)) + ylab('bias') +  ylim(-.2,.2)
-
+tupd.mean.bias <- ggplot(gridsim,mapping=aes(x=delta,y=mean.bias)) +
+    geom_path(lty=2) + geom_line(y=0,colour='gray') +
+    geom_path(aes(y=m.bias),lty=3,col='red') +
+    geom_path(aes(y=m.bias.n),lty=3,col='red') +
+    geom_path(aes(y=uc.mean.bias),lty=1) +
+    geom_path(aes(y=brannath),lty=3,col='darkgreen') +
+    geom_path(aes(y=-brannath),lty=3,col='darkgreen') +
+    facet_grid(sigma~s,labeller=lverbose) + theme_bw() +
+    xlab(expression(delta)) + ylab('bias') + ylim(-.2,.2)
 print(tupd.mean.bias)
 
 ```
@@ -167,13 +172,13 @@ print(tupd.mean.bias)
 
 Next we look at variance estimates. 
 
-```r
+```{r,results='hide',include=F,echo=F}
 
 tupd.var.bias <- ggplot(gridsim,mapping=aes(x=delta,y=variance.bias)) +
     geom_line(y=0,colour='gray') + geom_path(aes(y=bound),color="red") +
-  geom_path(lty=2) + geom_path(aes(y=uc.variance.bias),lty=1) +#geom_point(shape='V') + geom_point(aes(y=mean.bias),shape='M') +
-  facet_grid(sigma~s,labeller=lverbose) + theme_bw() + ylim(-0.4,0.1) + xlab(expression(delta)) + ylab('bias')
-print(tupd.var.bias)
+    geom_path(lty=2) + geom_path(aes(y=uc.variance.bias),lty=1) +
+    facet_grid(sigma~s,labeller=lverbose) + theme_bw() + ylim(-0.4,0.1) +
+    xlab(expression(delta)) + ylab('bias') print(tupd.var.bias)
 
 ```
 
@@ -211,12 +216,11 @@ variance of mean - as estimated from all monte carlo samples - is
 estim mean estimate across all simulation 
 runs. This shows that the standard error of a fixed sample design with
 average sample size is larger than the standard error of the adaptive
-design.  
+design.
 
 
 
-```{r}
-
+```{r,results='hide',include=F,echo=F}
 tupd.vm.bias <- ggplot(gridsim,mapping=aes(x=delta,y=vm)) +geom_line(lty=1) + geom_path(aes(y=ev),lty=2) + geom_path(aes(y=exv),lty=3) + 
     facet_grid(sigma~s,labeller=lverbose) + theme_bw() + xlab(expression(delta)) + ylab('Variance of the mean estimate')
 print(tupd.vm.bias)
@@ -228,114 +232,25 @@ print(tupd.uc.vm.bias)
 ```
 
 
-```
-lverbose = function(variable,value){
-    if(variable == "s"){
-        sapply(value,function(val) substitute(paste("s = ",foo,", ",n[1]," = ",n1,sep=''),list(foo=val,n1=ceiling(1/2*zss(val,1,.025,.2)))))
-    } else {
-        label_parsed(variable,label_both(variable,value))
-    }
-}
 
-tupd <- ggplot(gridsim,mapping=aes(x=delta,y=.025-upper.prob)) +
-    geom_line(y=0,colour='gray') +
-    geom_path(lty=2) + #geom_point(shape='u') +
-    geom_path(aes(y=.025-lower.prob),lty=3) + #geom_point(aes(y=.025-lower.prob),shape='l') +
-    geom_path(aes(y=.05-total.prob)) + #geom_point(aes(y=.05-total.prob),shape='t') +
-    facet_grid(sigma~s,labeller=lverbose) + theme_bw() + ylim(-.025,.01) + xlab(expression(delta)) + ylab('actual - nominal coverage')
-print(tupd)
-
-
-tupd.uc <- ggplot(gridsim,mapping=aes(x=delta,y=.025-uc.upper.prob)) +
-    geom_line(y=0,colour='gray') +
-    geom_path(lty=2) + # geom_point(shape='u') +
-    geom_path(aes(y=.025-uc.lower.prob),lty=3) + #geom_point(aes(y=.025-uc.lower.prob),shape='l') +
-    geom_path(aes(y=.05-uc.total.prob)) + #geom_point(aes(y=.05-uc.total.prob),shape='t') +
-    facet_grid(sigma~s,labeller=lverbose) + theme_bw()+  ylim(-.025,.01) + xlab(expression(delta)) + ylab('actual -nominal coverage')
-print(tupd.uc)
-
-
-
-tupd.se.bias <- ggplot(gridsim,mapping=aes(x=delta,y=se.bias)) +
-    geom_line(y=0,colour='gray') + geom_path(aes(y=bound),color="red") +
-  geom_path(lty=1) + geom_path(aes(y=uc.se.bias),lty=2) +#geom_point(shape='V') + geom_point(aes(y=mean.bias),shape='M') +
-  facet_grid(sigma~s,labeller=lverbose) + theme_bw() + ylim(-0.2,0.2) + xlab(expression(delta)) + ylab('bias')
-print(tupd.se.bias)
-
-tupd.mean.bias <- ggplot(gridsim,mapping=aes(x=delta,y=mean.bias)) + geom_path(lty=1)+
-  geom_line(y=0,colour='gray') + geom_path(aes(y=m.bias),lty=3,col='red') +  geom_path(aes(y=uc.mean.bias),lty=2) +
-  facet_grid(sigma~s,labeller=lverbose) + theme_bw()  + xlab(expression(delta)) + ylab('bias') # +  ylim(-.2,.2)
-print(tupd.mean.bias)
-
-
-
-tupd.mean.bias.sem <- ggplot(gridsim,mapping=aes(x=delta,y=mean.bias/(sigma/sqrt(n1)))) +
-  geom_line(y=0,colour='gray') +  
-  geom_path(lty=1) + geom_path(aes(y=uc.mean.bias/(sigma/sqrt(n1))),lty=2) +#geom_point(shape='V') +geom_point(aes(y=uc.mean.bias),shape='M') +
-  facet_grid(sigma~s,labeller=lverbose) + theme_bw() + xlab(expression(delta)) + ylab('bias')
-print(tupd.mean.bias.sem)
-
-tupd.ass <- ggplot(gridsim,mapping=aes(x=delta,y=(mean.m1+n1))) +
-  geom_line(y=0,colour='gray') +  
-  geom_path(lty=1) + geom_path(aes(y=uc.mean.m1+n1),lty=2) +#geom_point(shape='V') +geom_point(aes(y=uc.mean.bias),shape='M') +
-  facet_grid(sigma~s,labeller=lverbose) + theme_bw() + xlab(expression(delta)) + ylab('average sample size')
-print(tupd.ass)
-
-
-
-pdf('coverage.pdf',9,8)
+```{r,eval=F,echo=F,include=F}
+## this chunk produces the files that go into the paper
+cairo_ps('coverage.eps')
 print(tupd)
 dev.off()
-
-pdf('uc_coverage.pdf',9,8)
+cairo_ps('uc_coverage.eps')
 print(tupd.uc)
 dev.off()
-
-
-pdf('mean_bias.pdf',9,8)
+cairo_ps('varmeanBias.eps')
+print(tupd.vm.bias)
+dev.off()
+cairo_ps('uc_varmeanBias.eps')
+print(tupd.uc.vm.bias)
+dev.off()
+cairo_ps('mean_bias.eps')
 print(tupd.mean.bias)
 dev.off()
-
-pdf('mean_bias_sem_scaled.pdf',9,8)
-print(tupd.mean.bias.sem)
+cairo_ps('var_bias.eps')
+print(tupd.var.bias)
 dev.off()
-
-pdf('sd_bias.pdf',9,8)
-print(tupd.sd.bias)
-dev.off()
-
-pdf('asn.pdf',9,8)
-print(tupd.ass)
-dev.off()
-
 ```
-
-
-Figures \ref{fig:bias} and \ref{fig:sd} show the (mean) bias of the
-final estimates of the mean and standard deviation based on the total
-sample. The estimates are biased for very small first stage sample
-sizes or very large variances $\sigma$. For both sample size
-reassessment rules $n_2(\fos)$ and $n_2(S_{1,OS,\pdelta}^2)$ the bias
-of the mean is zero under the null hypothesis and has the opposite
-sign as the true effectsize, otherwise. For very large positive and
-negative effect sizes the bias is close to zero again. The latter is
-due to the fact that for large effects that blinded interim variance
-estimates are heavily positively biased leading to very large second
-stage sample sizes. As a consequence the overall estimates are
-essentially equal to the (unbiased) second stage estimates and the
-bias becomes negligible. The estimate of the variance is negatively
-biased and the bias appears to be maximised under the null
-hypothesis. For positive and negative effect sizes the bias approaches
-0 again due to the fact that the overall estimate becomes essentially
-equal to the (unbiased) second stage estimates.
-
-
-In general we observe that the absolute bias of mean and variance is larger when using the adjusted interim variance estimate compared to the case where the unadjusted estimate is used for sample size reassessment.
-
-Eventhough the variance estimate is negatively biased, this does not imply that the estimated standard error is biased as well [\XXX es ist wohl problematisch ueber den Bias des SE zu sprechen aus gleichen Gruenden wie ueber den Bias der SD \XXX]. This is due to the fact, that the actual standard error $\sqrt{Var(\bar \Delta)}$ is lower than $\sqrt{E(\sigma^2/n)}$ as well.
-
-Under the null hypothesis ($\delta=0$) the confidence interval has correct coverage, even for small sample sizes [Ausnahme Figure 3 2. Zeile, 2. Spalte?]. On first sight this is surprising, because the variance estimate is negatively biased, while the mean is unbiased.
-
-The coverage probabilities of the confidence intervals are shown in Figures \ref{fig:uc.coverage} and \ref{fig:coverage}. Note that the coverage probability for the upper confidence bound at a certain true effect size $\delta$ is the same as the coverage probability for the lower confidence bound at $-\delta$. For positive $\delta$ the lower confidence bound is conservative (with coverage probability larger than 0.975) while the upper bound is anti-conservative. Over a large range of $\delta$  the two-sided coverage probability (which is given by one minus the sum of the non-coverage probabilities of the lower and upper bounds) is not controlled.
-
-
