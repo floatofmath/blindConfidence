@@ -56,10 +56,8 @@ zsd <- function(n1,d,v = 1/2,alpha,beta){
 #' @param runs number of simulation runs
 #' @param n2 first stage sample size in control group
 #' @param n2min minimum secondstage sample size
-#' @param testdata debugging option not for general use
 #' @param fulldata return full data 
 #' @param cf correction term added to the sample size rule
-#' @param ...
 #' @return If fulldata is \code{FALSE} simVBIA returns a list with
 #' the following items, summarizing the simulation results for
 #' designs with sample size reassessment based on the adjusted
@@ -87,7 +85,7 @@ zsd <- function(n1,d,v = 1/2,alpha,beta){
 #' \item{uc.mean.m1}{Mean second stage sample size}
 #' \item{uc.low.m1}{Lower 10 percen quantile of second stage sample sizes}
 #' \item{uc.n10}{Probability that the second stage sample size is zero}
-#' \item{tn1 = mean(n1)}
+#' \item{tn1}{mean(n1)}
 #' @examples
 #' simVBIA(.5,1,1,n1=10,n2min=2,runs=10^3)
 #' @export
@@ -100,12 +98,11 @@ simVBIA <- function(delta, # true effect size
                    s = zsd(n1,d,v,alpha,beta), # assumed standard deviation, is more or less the same as n1
                    n1 = ceiling(v * zss(s,d,alpha,beta)), # first stage sample size in treatment group
                    runs, # number of simulation runs
-                       n2 =n1, # first stage sample size in control group
+                   n2 =n1, # first stage sample size in control group
                    n2min = 0, # minimum secondstage sample size
-                   testdata = FALSE, #  
                    fulldata = FALSE, #  
-                   cf = 0, #  
-                   ...){
+                   cf = 0
+                   ){
   ## pre-compute t-distribution quantiles
   qttable=qt(1-alpha,1:1000)
   xi=(qnorm(alpha,lower.tail=FALSE)+qnorm(beta,lower.tail=FALSE))^2/d^2
@@ -140,12 +137,6 @@ simVBIA <- function(delta, # true effect size
   ## this is for test purposes where we can
   ## enter data simulated on a patient level,
   ## which are less prone to programming errors
-  if(testdata & exists('florian')){
-    x1 <- florian$x1
-    x2 <- florian$x2
-    sq1 <- florian$sq1
-    sq2 <- florian$sq2
-  }
   diff=x1-x2
   diffr=x1r-x2r
   
@@ -162,11 +153,6 @@ simVBIA <- function(delta, # true effect size
   m1u <- pmax(ceiling(2*xi*psu)-n1+cf,n2min)
 
   ## replace by external values
-  if(testdata & exists('florian')){
-    other <- which(m1 != florian$m1)
-    cat("Mismatching sample sizes: ",length(other),"\n")
-    m1 <- florian$m1
-  }
   m2=m1
   m2u=m1u
 
@@ -187,26 +173,13 @@ simVBIA <- function(delta, # true effect size
   tq2=sigma^2*rchisq(runs,df=pmax(m2-1,1))
   tq1u=sigma^2*rchisq(runs,df=pmax(m1u-1,1)) 
   tq2u=sigma^2*rchisq(runs,df=pmax(m2u-1,1))
-
+  
   # set the  means to zero if second stage sample size is 0 
   tq1[m1<2]=0
   tq2[m2<2]=0
   tq1u[m1u<2]=0
   tq2u[m2u<2]=0
 
-  ## replace by external values
-  if(testdata & exists('florian')){
-    y1 <- florian$y1
-    y2 <- florian$y2
-    tq1 <- florian$tq1
-    tq2 <- florian$tq2
-    y1u <- florian$y1
-    y2u <- florian$y2
-    tq1u <- florian$tq1
-    tq2u <- florian$tq2    
-  }
-     
-  
   ## compute overall means
   ## groupwise sample sizes
   l1=n1+m1
@@ -281,8 +254,6 @@ simVBIA <- function(delta, # true effect size
       tn1 = mean(n1)
       )
   # list of lower prob, upper prob, total prob, mean bias, variance bias, standard error bias, sqrt(mse)
-  if(testdata & exists("florian"))
-    print(cbind(err,florian$err))
   #list(err=err,m1=m1)
   data <- list("x2" = x2, "y2" = y2,"sq2" = sq2,"tq2" = tq2, "x1" = x1, "y1" = y1,
                "sq1" = sq1, "tq1" = tq1, "m1" = m1, "ps" = ps,
@@ -319,9 +290,10 @@ lowerBound <- function(n1,d,alpha=.025,beta=.2){
 #'
 #' @param seq a parameter sequence plotted on the x-axis
 #' @param res the results a sequence of simulation runs along parameter \code{seq}
+#' @param ... further arguments passed to plot
 #' @examples
-#' meandif <- seq(0,1,.1)
-#' simulation <- sapply(meandif,function(m) simVBIA(delta=.25,sigma=2,m,runs=1000))
+#' meandif <- seq(0.1,1,.1)
+#' simulation <- sapply(meandif,function(m) simVBIA(delta=.25,sigma=2,m,n1=10,n2min=2,runs=1000))
 #' plotSim(meandif,simulation)
 #' @export
 plotSim <- function(seq,res,...){
@@ -404,7 +376,7 @@ simMBIA <- function(delta=0,n1=2,sigma=1,runs=100)
 #' A dataset containing the very simulation results used shown in the
 #' article "Estimation after blinded interim analyses". The simulation
 #' may be re-run using code shown in the
-#' \code{\link{vignette("SimulateBias")}}.
+#' vignette "SimulateBias".
 #'
 #' @format A \code{data.frame}, each line corresponds to the outcome from
 #' one simulation run with $10^6$ simulated trials.
@@ -417,7 +389,7 @@ NULL
 #' A dataset containing the very simulation results for the case study
 #' presented in in the article "Estimation after blinded interim analyses".
 #' The simulation may be re-run using code shown in the
-#' \code{\link{vignette("SimulateBias")}}.
+#' vignette "SimulateBias".
 #'
 #' @format A \code{data.frame}, each line corresponds to the outcome from
 #' one simulation run with $10^6$ simulated trials.

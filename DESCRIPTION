@@ -7,11 +7,10 @@ Authors@R: c(person("float", "Developer", role = c("aut", "cre"),
 Author: Florian Klinglmueller
 Maintainer: Florian Klinglmueller
     <florian.klinglmueller@meduniwien.ac.at>
-Depends:
-    R (>= 3.0.0)
-Suggests:
-    parallel
+Depends: R (>= 3.0.0)
+Suggests:  parallel, knitr, bt88.03.704, ggplot2
 Description: This package provides all code used to perform and summarize the
     simulation study shown in our paper "Estimation after blinded interim
     analysis"
-License: MIT
+License: MIT + file LICENSE
+VignetteBuilder: knitr

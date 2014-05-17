@@ -1,9 +1,14 @@
-<!--
 %\VignetteEngine{knitr::knitr}
 %\VignetteIndexEntry{Simulate estimation after blinded interim estimations}
--->
+\documentclass{article}
 
-# Simulation study of the properties of point estimates and confidence intervals
+
+\usepackage{colortbl}
+\usepackage{booktabs}
+\newcommand{\ie}{{\em i.e.,~}}
+\begin{document}
+
+\section{Simulation study of the properties of point estimates and confidence intervals}
 
 In the simulation study we reassessed the second stage sample size
 using the adjusted and the unadjusted variance estimate. In each stage
@@ -11,18 +16,18 @@ we generated normally distributed test statistics for the control and
 treatment group assuming balanced allocation.
 
 
-```{r} 
+<<>>=
 library(parallel)
 library(blindConfidence)
 library(ggplot2)
 options(mc.cores=detectCores()-2)
 
-```
+@
 
-```{r}
+<<>>=
 G <- expand.grid(delta=round(seq(-2,2,.2),2),sigma=round(c(.1,.25,seq(.5,2,.5)),2),d = c(.2,.6,1,2), s = round(seq(.5,2,.5),2))
 G$n1 <- ceiling(1/2*zss(G$s,G$d,.025,.2))
-```
+@
 
 We assume that the pre-planned sample size of the trial was planned
 for a one-sided significance level $\alpha=0.025$ assuming an effect
@@ -33,7 +38,7 @@ simulations were performed in R with $10^6$ simulation runs per
 scenario and the code is available as supplementary material.
 
 
-```{r,eval=FALSE}
+<<eval=FALSE>>=
 set.seed(50014056)
 runs <- 10^6
 gridsim <- t(simplify2array(mclapply(1:nrow(G),function(i) {c(G[i,],simVBIA(delta=G[i,]$delta,sigma=G[i,]$sigma,d=G[i,]$d,s=G[i,]$s,cf=1,runs=runs,alpha=.025,beta=.2))})))
@@ -56,23 +61,24 @@ bsim <- as.data.frame(apply(bsim,1,unlist),row.names=NA)
 gridsim <- bsim
 gridsim$brannath <- .4*sqrt(2)*gridsim$sigma/sqrt(gridsim$n1)
 
-```
+@
+
 We computed the simulation results shown in the final manuscript
-version using `r runs`. Applying the simulation function, in parallel,
-across rows of matrix `G`, which contains the parameter settings for
+version using $10^6$. Applying the simulation function, in parallel,
+across rows of matrix $G$, which contains the parameter settings for
 each scenario.
 
 
-```{r,eval=FALSE,echo=FALSE}
+<<eval=FALSE,echo=FALSE>>=
 fname <- paste('gridsim_',format(Sys.time(),"%y%m%d"),'.Rd',sep='')
 save(gridsim,file=fname)
-```
+@
 
 Instead of running the simulation each time, we can just load the data
 used in the final manuscript version, which is distributed with this
 package. 
 
-```{r}
+<<>>=
 data(gridsim)
 
 full.sim <- gridsim
@@ -80,25 +86,25 @@ full.sim <- gridsim
 gridsim <- subset(full.sim,d==1 & sigma>=.5)
 
 
-```
+@
 
 In fact the scenarios shown in the article comprise just a subset of
 the scenarios computed in the simulation. 
 
-Overall simulations were performed for all possible combinations
-between the following values of design parameters:
+% Overall simulations were performed for all possible combinations
+% between the following values of design parameters:
 
-```{r,echo=F,results='asis'}
-cat("<dl>\n")
-for(i in c('delta','sigma','d','s')){
-   cat("<dt>",i,"</dt>\n","<dd>",unique(gridsim[,i]),"</dd>\n")
-   }
-cat("</dl>")
-```
+% <<echo=F,results='asis'>>=
+% cat("\\begin{description}\n")
+% for(i in c('delta','sigma','d','s')){
+%    cat("\\item[",i,"]",unique(gridsim[,i]),"\n")
+%    }
+% cat("\\end{description}")
+% @
 
 
 
-```{r,results='hide',include=F,echo=F}
+<<results='hide',include=F,echo=F>>=
 #This little function takes care of annotating the plots.
 lverbose = function(variable,value){
     if(variable == "s"){
@@ -109,9 +115,9 @@ lverbose = function(variable,value){
     }
 }
 
-```
+@
 
-Next we set up the figures using `ggplot2` objects. We plot 
+Next we set up the figures using \texttt{ggplot2} objects. We plot 
 how far the coverage probabilities of one and two-sided confidence
 intervals deviate from their nominal coverage. First we show results
 for designs that reassess the sample size based on the adjusted
@@ -120,7 +126,7 @@ where the actual coverage is smaller than the nominal coverage. In
 this case the coresponding confidence intervals become liberal. 
 
 
-```{r,results='hide',echo=F,warning=F}
+<<results='hide',echo=F,warning=F>>=
 tupd <- ggplot(gridsim,mapping=aes(x=delta,y=.025-upper.prob)) +
     geom_line(y=0,colour='gray') +
     geom_path(lty=2) + 
@@ -130,11 +136,11 @@ tupd <- ggplot(gridsim,mapping=aes(x=delta,y=.025-upper.prob)) +
     xlab(expression(delta)) + ylab('actual - nominal coverage')
 print(tupd)
 
-```
+@
 Then also for designs that use the unadjusted lumped variance at
 interim.
 
-```{r,results='hide',echo=F,warning=F}
+<<results='hide',echo=F,warning=F>>=
 
 tupd.uc <- ggplot(gridsim,mapping=aes(x=delta,y=.025-uc.upper.prob)) +
     geom_line(y=0,colour='gray') +
@@ -145,7 +151,7 @@ tupd.uc <- ggplot(gridsim,mapping=aes(x=delta,y=.025-uc.upper.prob)) +
     ylim(-.025,.01) + xlab(expression(delta)) + ylab('actual -nominal coverage')
 print(tupd.uc)
 
-```
+@
 Next we look at estimates of the mean difference between treatment
 groups. Solid lines show the mean bias for designs where sample sizes
 are adjusted based on the adjusted interim variance estimate, dashed
@@ -154,7 +160,7 @@ unadjusted interim variance estimate. The dotted lines show the
 bias of the mean estimate using a samplesize reassessment rule is used
 in order to maximize the negative or positive bias, respectively.
 
-```{r,results='hide',echo=F,warning=F}
+<<results='hide',echo=F,warning=F>>=
 
 tupd.mean.bias <- ggplot(gridsim,mapping=aes(x=delta,y=mean.bias)) +
     geom_path(lty=2) + geom_line(y=0,colour='gray') +
@@ -167,12 +173,12 @@ tupd.mean.bias <- ggplot(gridsim,mapping=aes(x=delta,y=mean.bias)) +
     xlab(expression(delta)) + ylab('bias') + ylim(-.2,.2)
 print(tupd.mean.bias)
 
-```
+@
 
 
 Next we look at variance estimates. 
 
-```{r,results='hide',echo=F,warning=F}
+<<results='hide',echo=F,warning=F>>=
 
 tupd.var.bias <- ggplot(gridsim,mapping=aes(x=delta,y=variance.bias)) +
     geom_line(y=0,colour='gray') + geom_path(aes(y=bound),color="red") +
@@ -181,7 +187,7 @@ tupd.var.bias <- ggplot(gridsim,mapping=aes(x=delta,y=variance.bias)) +
     xlab(expression(delta)) + ylab('bias')
 print(tupd.var.bias)
 
-```
+@
 
 In each simulated trial we estimated the standard error of the mean,
 and compute the standard error of a fixed sample trial with the
@@ -221,20 +227,22 @@ design.
 
 
 
-```{r,results='hide',echo=F,warning=F}
+<<results='hide',echo=F,warning=F>>=
 tupd.vm.bias <- ggplot(gridsim,mapping=aes(x=delta,y=vm)) +geom_line(lty=1) + geom_path(aes(y=ev),lty=2) + geom_path(aes(y=exv),lty=3) + 
     facet_grid(sigma~s,labeller=lverbose) + theme_bw() + xlab(expression(delta)) + ylab('Variance of the mean estimate')
 print(tupd.vm.bias)
-
+@
+<<results='hide',echo=F,warning=F>>=
 tupd.uc.vm.bias <- ggplot(gridsim,mapping=aes(x=delta,y=uc.vm)) +geom_line(lty=1) + geom_path(aes(y=uc.ev),lty=2) + geom_path(aes(y=uc.exv),lty=3) + 
     facet_grid(sigma~s,labeller=lverbose) + theme_bw() + xlab(expression(delta)) + ylab('Variance of the mean estimate')
 print(tupd.uc.vm.bias)
 
-```
+@
 
 
+\end{document}
 
-```{r,eval=F,echo=F,include=F}
+<<eval=F,echo=F,include=F>>=
 ## this chunk produces the files that go into the paper
 cairo_ps('coverage.eps')
 print(tupd)
@@ -254,4 +262,4 @@ dev.off()
 cairo_ps('var_bias.eps')
 print(tupd.var.bias)
 dev.off()
-```
+@

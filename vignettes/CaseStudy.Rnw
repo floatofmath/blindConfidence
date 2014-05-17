@@ -39,7 +39,7 @@ The next code chunk runs the simulations. This may take a several of
 hours to a couple of days depending on the machine you run them
 on. Here with 32 cores and 32GB ram it took about 2 hours. 
 
-We first set up the parameters from \cite{kieser2003} and then run the
+We first set up the parameters from \cite{Kieser03} and then run the
 simulation.
 
 <<Settings,echo=F>>=
@@ -246,8 +246,6 @@ multiplot(tupd.uc,tupd.mean.bias,tupd.variance.bias,
                                         #"Average Sample Number")
           )
 @ 
-
-
 
 \bibliography{imsrefsjoined}
 \bibliographystyle{plain}
