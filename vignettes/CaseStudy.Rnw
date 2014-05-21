@@ -2,11 +2,15 @@
 %\VignetteIndexEntry{Case Study: estimation after blinded interim estimations}
 \documentclass{article}
 
+\title{Case study: estimation after blinded interim analyses}
+\author{Florian Klinglmueller}
 
 \usepackage{colortbl}
 \usepackage{booktabs}
 \newcommand{\ie}{{\em i.e.,~}}
 \begin{document}
+
+\maketitle
 
 \section{Introduction}
 
@@ -35,7 +39,7 @@ options(mc.cores=pmax(1,detectCores()-2))
 
 @ 
 
-The next code chunk runs the simulations. This may take a several of
+The next code chunk runs the simulations. This may take several of
 hours to a couple of days depending on the machine you run them
 on. Here with 32 cores and 32GB ram it took about 2 hours. 
 
@@ -55,16 +59,35 @@ s1a <- 5.3
 
 @
 
+To rerun the simulation the following code chunk needs to be
+reconfigured for evaluation.
+
 <<Simulation,eval=F>>=
 
 set.seed(659376)
-G <- expand.grid(delta = round(seq(-2*d, 2*d,d/20),2),sigma = round(seq(1,20,1)),d=5.5,s=8,n1=15)
+G <- expand.grid(delta = round(seq(-2*d, 2*d,d/20),2),
+                 sigma = round(seq(1,20,1)),
+                 d=5.5,
+                 s=8,n1=15)
 
 runs=5*10^6
-casesim <- t(simplify2array(mclapply(1:nrow(G),function(i) {c(G[i,],simVBIA(delta=G[i,]$delta,sigma=G[i,]$sigma,d=G[i,]$d,s=G[i,]$s,n1=G[i,]$n1,cf=1,runs=runs,alpha=.025,beta=.2))})))
+casesim <- t(simplify2array(mclapply(1:nrow(G),
+                                     function(i) {c(G[i,],
+                                                    simVBIA(delta=G[i,]$delta,
+                                                            sigma=G[i,]$sigma,
+                                                            d=G[i,]$d,s=G[i,]$s,
+                                                            n1=G[i,]$n1,
+                                                            cf=1,runs=runs,
+                                                            alpha=.025,
+                                                            beta=.2))})))
 
 runs <- 10^5
-bsim <- do.call(rbind,lapply(1:nrow(G),function(i) {c(G[i,],simMBIA(delta=G[i,]$delta,sigma=G[i,]$sigma,n1=dsim[i,]$n1,runs=runs))}))
+bsim <- do.call(rbind,lapply(1:nrow(G),
+                             function(i) {c(G[i,],
+                                            simMBIA(delta=G[i,]$delta,
+                                                    sigma=G[i,]$sigma,
+                                                    n1=dsim[i,]$n1,
+                                                    runs=runs))}))
 
 #load('fallback.rda')
 bsim <- as.data.frame(apply(bsim,2,unlist),row.names=NA)
@@ -194,7 +217,7 @@ two-sided intervals.
 
 
 
-<<eval=T,echo=F>>=
+<<eval=T,echo=F,include=F>>=
 lverbose = function(variable,value){
     if(variable == "s"){
         sapply(value,function(val) substitute(paste(delta[0], " = 5.5, " ,sigma[0], " = ",foo,sep=''),list(foo=val,n1=ceiling((15/34)*zss(val,5.5,.025,.2)))))
