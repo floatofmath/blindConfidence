@@ -408,9 +408,9 @@ NULL
 #' Rebuilding the vignettes will use the saved results to redraw all
 #' the graphics from the paper. In order to rerun the simulations the
 #' corresponding code chunks need to be configured for
-#' evaluation. Note that although this package will run on Windows
-#' recomputing the simulation results requires additional packages
-#' (e.g. parallel) that are not supported on Windows.
+#' evaluation. NOTE: although this package should run on Windows it
+#' has been tested and optimized under Linux.
+#' 
 #'
 #' @name blindConfidence-package
 #' @aliases blindConfidence
