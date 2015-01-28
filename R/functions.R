@@ -383,6 +383,18 @@ simMBIA <- function(delta=0,n1=2,sigma=1,runs=100)
 #' @name gridsim
 NULL
 
+#' Maximum Bias Simulations "Estimation after blinded interim analyses"
+#'
+#' A dataset containing the very simulation results used shown in the
+#' article "Estimation after blinded interim analyses". The simulation
+#' may be re-run using code shown in the
+#' vignette "MaxBias".
+#'
+#' @format A \code{data.frame}, each line corresponds to the outcome from
+#' one simulation run with $10^6$ simulated trials.
+#' @name maxsim
+NULL
+
 
 #' Case study simulations "Estimation after blinded interim analyses"
 #'
