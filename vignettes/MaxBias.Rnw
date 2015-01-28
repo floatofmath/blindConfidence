@@ -105,11 +105,12 @@ gridsim <- subset(full.sim,d==1 & sigma>=.5)
 <<results='hide',include=F,echo=F>>=
 #This little function takes care of annotating the plots.
 lverbose = function(variable,value){
-    if(variable == "s"){
-        sapply(value,function(val) substitute(paste(sigma[0]," = ",foo,", ",n[1]," = ",n1,sep=''),
-                                              list(foo=val,n1=ceiling(1/2*zss(val,1,.025,.2)))))
+    if(variable == "variable"){
+        c('Maximum mean bias',expression(delta),expression(sigma))
+        ## sapply(value,function(val) substitute(paste(sigma[0]," = ",foo,", ",n[1]," = ",n1,sep=''),
+        ##                                       list(foo=val,n1=ceiling(1/2*zss(val,1,.025,.2)))))
     } else {
-        sapply(value,function(val) substitute(paste(sigma," = ",foo,sep=""),list(foo=val)))
+        c("Unadjusted","Adjusted")
     }
 }
 
@@ -118,37 +119,54 @@ lverbose = function(variable,value){
 Figure \ref{fig:maxbias} shows the results.
 
 <<maxbias,echo=F,fig.cap="Maximum attainable mean bias for a given first stage sample size: Left column shows data for absolute bias, right column for relative bias (in units of the standard error). First row gives maximum bias, second the difference of means, third the standard deviation and fourth the variance of the mean where the maximum is attained.">>=
-gridsim <- within(gridsim,relbias <- mean.bias/sqrt(vm),uc.relbias <- uc.mean.bias/sqrt(uc.vm))
+
+gridsim <- within(gridsim,{relbias <- mean.bias/sqrt(vm)
+                           uc.relbias <- uc.mean.bias/sqrt(uc.vm)})
 
 max.bias <- ddply(gridsim,"n1",summarise,
                   max.mean.bias= -min(mean.bias),
                   max.mean.bias.delta = delta[which.min(mean.bias)],
                   max.mean.bias.sigma = sigma[which.min(mean.bias)],
-                  max.mean.bias.vm = vm[which.min(mean.bias)],
+                  ## max.mean.bias.vm = vm[which.min(mean.bias)],
+                  max.rel.mean.bias= -min(relbias),
+                  max.rel.mean.bias.delta = delta[which.min(relbias)],
+                  max.rel.mean.bias.sigma = sigma[which.min(relbias)],
+                  ## max.rel.mean.bias.vm = vm[which.min(relbias)],
+                  uc.max.mean.bias= -min(uc.mean.bias),
+                  uc.max.mean.bias.delta = delta[which.min(uc.mean.bias)],
+                  uc.max.mean.bias.sigma = sigma[which.min(uc.mean.bias)],
+                  ## uc.max.mean.bias.vm = vm[which.min(uc.mean.bias)],
+                  uc.max.rel.mean.bias= -min(uc.relbias),
+                  uc.max.rel.mean.bias.delta = delta[which.min(uc.relbias)],
+                  uc.max.rel.mean.bias.sigma = sigma[which.min(uc.relbias)]
+                  ## uc.max.rel.mean.bias.vm = vm[which.min(uc.relbias)]
                   ## max.variance.bias= -min(variance.bias),
                   ## max.variance.bias.delta = delta[which.min(variance.bias)],
                   ## max.variance.bias.sigma = sigma[which.min(variance.bias)],
                   ## max.variance.bias.vm = vm[which.min(variance.bias)],
-                  max.rel.mean.bias= -min(relbias),
-                  max.rel.mean.bias.delta = delta[which.min(relbias)],
-                  max.rel.mean.bias.sigma = sigma[which.min(relbias)],
-                  max.rel.mean.bias.vm = vm[which.min(relbias)]
                   )
 
 
 df <- melt(max.bias,id='n1')
 df <- within(df,scale <- c("absolute","relative")[grepl("rel",variable)+1])
+df <- within(df,method <- factor((2:1)[grepl("uc",variable)+1],labels=c("unadjusted","adjusted")))
 df <- within(df,variable <- sub("rel\\.","",variable))
-qplot(2*n1,value,data=df,geom='line')+facet_grid(variable~scale,scale='free_y')+xlab('Total first stage sample size')+ylab('Value')
-
+df <- within(df,variable <- sub("uc\\.","",variable))
+df <- within(df,variable <- factor(variable,labels=c('maximum mean bias',expression(delta),expression(sigma))))
+mplot <- qplot(2*n1,value,data=df[df$scale=="absolute",],geom='line')+facet_grid(variable~method,scale='free_y',labeller=lverbose)+xlab('Total first stage sample size')+ylab('Value')+theme_bw()
+print(mplot)
 
 ## relativer bias (constallation die den bias,bzw,type I error, maximiert)
-
-
-
 
 
 @ 
 
 \end{document}
+
+
+<<eval=F>>=
+cairo_ps('maxbias.eps',height=7,width=7)
+print(mplot)
+dev.off()
+@
 
