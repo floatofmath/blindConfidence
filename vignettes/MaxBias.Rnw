@@ -153,7 +153,11 @@ df <- within(df,method <- factor((2:1)[grepl("uc",variable)+1],labels=c("unadjus
 df <- within(df,variable <- sub("rel\\.","",variable))
 df <- within(df,variable <- sub("uc\\.","",variable))
 df <- within(df,variable <- factor(variable,labels=c('maximum mean bias',expression(delta),expression(sigma))))
-mplot <- qplot(2*n1,value,data=df[df$scale=="absolute",],geom='line')+facet_grid(variable~method,scale='free_y',labeller=lverbose)+xlab('Total first stage sample size')+ylab('Value')+theme_bw()
+dfa <- df[df$scale=="absolute",]
+mplot <- ggplot(dfa,aes(2*n1,value))+
+    geom_line(subset=.(variable=="maximum mean bias")) +
+    geom_smooth(subset=.(variable!="maximum mean bias")) +
+    facet_grid(variable~method,scale='free_y',labeller=lverbose) +xlab('Total first stage sample size')+ylab('Value')+theme_bw()
 print(mplot)
 
 ## relativer bias (constallation die den bias,bzw,type I error, maximiert)
