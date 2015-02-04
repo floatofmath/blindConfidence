@@ -154,10 +154,12 @@ df <- within(df,variable <- sub("rel\\.","",variable))
 df <- within(df,variable <- sub("uc\\.","",variable))
 df <- within(df,variable <- factor(variable,labels=c('maximum mean bias',expression(delta),expression(sigma))))
 dfa <- df[df$scale=="absolute",]
+scalehelper <- data.frame(n1=rep(-10,3),variable=factor(1:3,label=c("maximum mean bias",expression(delta),expression(sigma))),value=rep(0,3),scale=rep("absolute",3),method=rep("adjusted",3))
+dfa <- rbind(dfa,scalehelper)
 mplot <- ggplot(dfa,aes(2*n1,value))+
     geom_line(subset=.(variable=="maximum mean bias")) +
     geom_smooth(subset=.(variable!="maximum mean bias")) +
-    facet_grid(variable~method,scale='free_y',labeller=lverbose) +xlab('Total first stage sample size')+ylab('Value')+theme_bw()
+    facet_grid(variable~method,scale='free_y',labeller=lverbose) +xlab('Total first stage sample size')+ylab('Value')+theme_bw()+xlim(c(2,150))
 print(mplot)
 
 ## relativer bias (constallation die den bias,bzw,type I error, maximiert)
