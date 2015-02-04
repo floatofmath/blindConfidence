@@ -84,10 +84,10 @@ zsd <- function(n1,d,v = 1/2,alpha,beta){
 #' \item{uc.root.mse}{Root mean squared error of the effect estimate}
 #' \item{uc.mean.m1}{Mean second stage sample size}
 #' \item{uc.low.m1}{Lower 10 percen quantile of second stage sample sizes}
-#' \item{uc.n10}{Probability that the second stage sample size is zero}
+#' \item{uc.N10}{Probability that the second stage sample size is zero}
 #' \item{tn1}{mean(n1)}
 #' @examples
-#' simVBIA(.5,1,1,n1=10,n2min=2,runs=10^7)
+#' simVBIA(.5,1,1,n1=10,n2min=2,runs=1000)
 #' @export
 simVBIA <- function(delta, # true effect size
                    sigma, # true standard deviation
@@ -133,25 +133,19 @@ simVBIA <- function(delta, # true effect size
   sim[,sq2:=sigma^2*rchisq(runs,n2-1)]
   ## sq2r=sigma^2*rchisq(runs,n2-1)
 
-  ## replace by external values
-  ## this is for test purposes where we can
-  ## enter data simulated on a patient level,
-  ## which are less prone to programming errors
-  sim[,diff:=x1-x2]
-  ##diffr=x1r-x2r
-  
   # overall standard deviation s_adj following Kieser &Friede 2003
   # may become <0, we set it to zero in that case (?) check
-  sim[,ps:= pmax((sq1+sq2+lamb*diff*diff)/(n-1)- d^2*n1/(2*n-2),0)] #check
+  sim[,ps:= pmax((sq1+sq2+lamb*{x1-x2}*{x1-x2})/(n-1)- d^2*n1/(2*n-2),0)] #check
 
   ## without adjustment for mean guess
-  sim[,psu:=(sq1+sq2+lamb*diff*diff)/(n-1)]
+  sim[,psu:=(sq1+sq2+lamb*{x1-x2}*{x1-x2})/(n-1)]
 
   ## round of errors!
   ## m1=pmax(round(2*xi*ps)-n1,0)
   sim[,m1:=pmax(ceiling(2*xi*ps)-n1+cf,n2min)]
   sim[,m1u:= pmax(ceiling(2*xi*psu)-n1+cf,n2min)]
-
+  sim[,ps:=NULL]
+  sim[,psu:=NULL]
   ## replace by external values
   sim[,m2:=m1]
   sim[,m2u:=m1u]
@@ -180,71 +174,45 @@ simVBIA <- function(delta, # true effect size
   sim[m1u<2,tq1u:=0]
   sim[m2u<2,tq2u:=0]
 
-  ## compute overall means
-  ## groupwise sample sizes
-  sim[,l1:=n1+m1]
-  sim[,l2:=n2+m2]
-
-  ## degrees of freedom
-  sim[,ll:=l1+l2-2]
-
-  ## analogue for unadjusted interim estimates
-  sim[,l1u:=n1+m1u]
-  sim[,l2u:=n2+m2u]
-  sim[,llu:=l1u+l2u-2]
+  sim[,ll:={n1+m1}+{n2+m2}-2]
+  sim[,llu:={n1+m1u}+{n2+m2u}-2]
 
 
-
-  ## final analysis estimate of the standard deviation
-  sim[,sp1:=sqrt((tq1+sq1+(y1-x1)^2*n1*m1/l1+tq2+sq2+(y2-x2)^2*n2*m2/l2)/ll)]
-
-  ## this is just for test purposes should be unbiased
-  ## sp1r=sqrt((tq1+sq1r+(y1-x1r)^2*n1*m1/l1+tq2+sq2r+(y2-x2r)^2*n2*m2/l2)/ll)
-
+  sim[,sp1u:=sqrt((tq1u+sq1+(y1u-x1)^2*n1*m1u/{n1+m1u}+tq2u+sq2+(y2u-x2)^2*n2*m2u/{n2+m2u})/llu)]
+  sim[,sp1:=sqrt((tq1+sq1+(y1-x1)^2*n1*m1/{n1+m1}+tq2+sq2+(y2-x2)^2*n2*m2/{n2+m2})/ll)]
   ## t-test denominator (see kieser & friede 2003)
-  sim[,sp:=sp1*sqrt((1/l1+1/l2))]
-
-  sim[,sp1u:=sqrt((tq1u+sq1+(y1u-x1)^2*n1*m1u/l1u+tq2u+sq2+(y2u-x2)^2*n2*m2u/l2u)/llu)]
-  ## sp1ur=sqrt((tq1u+sq1r+(y1u-x1r)^2*n1*m1u/l1u+tq2u+sq2r+(y2u-x2r)^2*n2*m2u/l2u)/llu)
-  sim[,spu:=sp1u*sqrt((1/l1u+1/l2u))]
+  sim[,sp:=sp1*sqrt((1/{n1+m1}+1/{n2+m2}))]
+  sim[,spu:=sp1u*sqrt((1/{n1+m1u}+1/{n2+m2u}))]
 
   ## t-test numerator
-  sim[,diffmu:=(n2*x2+m2*y2)/l2-(n1*x1+m1*y1)/l1]
+  sim[,diffmu:=(n2*x2+m2*y2)/{n2+m2}-(n1*x1+m1*y1)/{n1+m1}]
   sim[,bar:=sp*qttable[pmin(ll,1000)]]# hier werden die approx. quantile verwendet. hat das einen impact
-  sim[,cl:=diffmu-bar]
-  sim[,cu:=diffmu+bar]
   
-  sim[,diffmuu:=(n2*x2+m2u*y2u)/l2u-(n1*x1+m1u*y1u)/l1u]
+  sim[,diffmuu:=(n2*x2+m2u*y2u)/{n2+m2u}-(n1*x1+m1u*y1u)/{n1+m1u}]
   sim[,baru:=spu*qttable[pmin(llu,1000)]]# hier werden die approx. quantile verwendet. hat das einen impact
-  sim[,clu:=diffmuu-baru]
-  sim[,cuu:=diffmuu+baru]
-
-  ## estimate of the true mean variance
-  vm <- sim[,var(diffmu)]
-  vmu <- sim[,var(diffmuu)]
 
   err=c(
-      lower.prob=sim[,sum(cl>delta)/runs],
-      upper.prob=sim[,sum(cu<delta)/runs],
-      total.prob=sim[,sum((cl>delta)+(cu<delta))/runs],
+      lower.prob=sim[,sum({diffmu-bar}>delta)/runs],
+      upper.prob=sim[,sum({diffmu+bar}<delta)/runs],
+      total.prob=sim[,sum(({diffmu-bar}>delta)+({diffmu+bar}<delta))/runs],
       mean.bias=sim[,sum(diffmu-delta)/runs],
       variance.bias=sim[,sum(sp1^2-sigma^2)/runs], #? sp^2 -1]
-      vm =vm,
+      vm =sim[,var(diffmu)],
       ev =sim[, mean(sp^2)], #? var(diffmu)-sem^2]
-      exv =sim[,mean(sigma^2*(1/l1+1/l2))],
+      exv =sim[,mean(sigma^2*(1/{n1+m1}+1/{n2+m2}))],
       root.mse=sim[,sqrt(sum((diffmu-delta)^2)/runs)],
       mean.m1=sim[,median(m1)],
       min.m1=sim[,unlist(quantile(m1,.01,na.rm=TRUE))],
       N10 = sim[,sum(m1==0)/runs],
 ### uncorrected    
-      uc.lower.prob=sim[,sum(clu>delta)/runs],
-      uc.upper.prob=sim[,sum(cuu<delta)/runs],
-      uc.total.prob=sim[,sum((clu>delta)+(cuu<delta))/runs],
+      uc.lower.prob=sim[,sum({diffmuu-baru}>delta)/runs],
+      uc.upper.prob=sim[,sum({diffmuu+baru}<delta)/runs],
+      uc.total.prob=sim[,sum(({diffmuu-baru}>delta)+({diffmuu+baru}<delta))/runs],
       uc.mean.bias=sim[,sum(diffmuu-delta)/runs],
       uc.variance.bias=sim[,sum(sp1u^2-sigma^2)/runs], #? sp^2 -]1
-      uc.vm=vmu, #]?
+      uc.vm=sim[,var(diffmuu)], #]?
       uc.ev =sim[,mean(spu^2)],
-      uc.exv =sim[, mean(sigma^2*(1/l1u+1/l2u))],
+      uc.exv =sim[, mean(sigma^2*(1/{n1+m1u}+1/{n2+m2u}))],
       uc.root.mse=sim[,sqrt(sum((diffmuu-delta)^2)/runs)],
       uc.mean.m1=sim[,median(m1u)],
       uc.min.m1=sim[,unlist(quantile(m1u,.01,na.rm=TRUE))],
@@ -257,10 +225,69 @@ simVBIA <- function(delta, # true effect size
   ##              "sq1" = sq1, "tq1" = tq1, "m1" = m1, "ps" = ps,
   ##              "y2u" = y2u ,"tq2u" = tq2u, "y1u" = y1u,
   ##              "tq1u" = tq1u, "m1u" = m1u, "psu" = psu)
-  if(fulldata) return(list(sim,err))
+  if(fulldata) return(list("sim"=sim,
+                           "delta"=delta,
+                           "runs"=runs,
+                           "sigma"=sigma,
+                           "n1"=n1,
+                           "n2"=n2))
   return(err)
 }
+##' Combine the fulldata results of two simulation runs 
+##'
+##' @title Combine simulation results
+##' @param ... any number of simulation results from \code{simVBIA} with \code{fulldata} set to \code{TRUE}
+##' @return a simulation result object
+##' @author float
+##' @export
+combine_simVBIA <- function(...){
+    param <- sapply(list(...),tail,5)
+    test <- apply(param,1,function(th) all(th[-1] %in% th[1]))
+    if(!all(test)){
+        stop("Trying to combine simulation results from different parameter settings")
+    }
+    data <- lapply(list(...),`[[`,"sim")
+    c(list("sim"=rbindlist(data)),tail(list(...)[[1]],-1))
+}
 
+##' Computes summary statistics for simulation results computed with \code{simVBIA}
+##' 
+##' @title Summarize simulation results
+##' @param sim result of \code{simVBIA} with option fulldata set to \code{TRUE}
+##' @return
+##' @template vbia_results
+##' @author float
+##' @export
+summary_simVBIA <- function(simresults){
+    c(lower.prob=simresults$sim[,sum({diffmu-bar}>simresults$delta)/simresults$runs],
+      upper.prob=simresults$sim[,sum({diffmu+bar}<simresults$delta)/simresults$runs],
+      total.prob=simresults$sim[,sum(({diffmu-bar}>simresults$delta)+({diffmu+bar}<simresults$delta))/simresults$runs],
+      mean.bias=simresults$sim[,sum(diffmu-simresults$delta)/simresults$runs],
+      variance.bias=simresults$sim[,sum(sp1^2-simresults$sigma^2)/simresults$runs], #? sp^2 -1]
+      vm =sim[,var(diffmu)],
+      ev =simresults$sim[, mean(sp^2)], #? var(diffmu)-sem^2]
+      exv =simresults$sim[,mean(simresults$sigma^2*(1/{simresults$n1+m1}+1/{simresults$n2+m2}))],
+      root.mse=simresults$sim[,sqrt(sum((diffmu-simresults$delta)^2)/simresults$runs)],
+      mean.m1=simresults$sim[,median(m1)],
+      min.m1=simresults$sim[,unlist(quantile(m1,.01,na.rm=TRUE))],
+      N10 = simresults$sim[,sum(m1==0)/simresults$runs],
+### uncorrected    
+      uc.lower.prob=simresults$sim[,sum({diffmuu-baru}>simresults$delta)/simresults$runs],
+      uc.upper.prob=simresults$sim[,sum({diffmuu+baru}<simresults$delta)/simresults$runs],
+      uc.total.prob=simresults$sim[,sum(({diffmuu-baru}>simresults$delta)+({diffmuu+baru}<simresults$delta))/simresults$runs],
+      uc.mean.bias=simresults$sim[,sum(diffmuu-simresults$delta)/simresults$runs],
+      uc.variance.bias=simresults$sim[,sum(sp1u^2-simresults$sigma^2)/simresults$runs], #? sp^2 -]1
+      uc.vm =sim[,var(diffmuu)],
+      uc.ev =simresults$sim[,mean(spu^2)],
+      uc.exv =simresults$sim[, mean(simresults$sigma^2*(1/{simresults$n1+m1u}+1/{simresults$n2+m2u}))],
+      uc.root.mse=simresults$sim[,sqrt(sum((diffmuu-simresults$delta)^2)/simresults$runs)],
+      uc.mean.m1=simresults$sim[,median(m1u)],
+      uc.min.m1=simresults$sim[,unlist(quantile(m1u,.01,na.rm=TRUE))],
+      uc.N10 = simresults$sim[,sum(m1==0)/simresults$runs],
+      tn1 = simresults$sim[,mean(simresults$n1)]
+      )
+}
+    
 #' Compute a lower bound for the variance bias
 #'
 #' \code{lowerBound} computes a lower bound for the
@@ -371,7 +398,7 @@ simMBIA <- function(delta=0,n1=2,sigma=1,runs=100)
 #' Simulation results from "Estimation after blinded interim analyses"
 #'
 #' A dataset containing the very simulation results used shown in the
-#' article "Estimation after blinded interim analyses". The simulation
+#' arti{diffmu-bar}e "Estimation after blinded interim analyses". The simulation
 #' may be re-run using code shown in the
 #' vignette "SimulateBias".
 #'
@@ -383,7 +410,7 @@ NULL
 #' Maximum Bias Simulations "Estimation after blinded interim analyses"
 #'
 #' A dataset containing the very simulation results used shown in the
-#' article "Estimation after blinded interim analyses". The simulation
+#' arti{diffmu-bar}e "Estimation after blinded interim analyses". The simulation
 #' may be re-run using code shown in the
 #' vignette "MaxBias".
 #'
