@@ -122,7 +122,7 @@ data(gridsim)
 full.sim <- gridsim
 
 gridsim <- subset(full.sim,d==1 & sigma>=.5)
-
+gridsim$ylow <- 0
 
 @
 
@@ -130,8 +130,8 @@ gridsim <- subset(full.sim,d==1 & sigma>=.5)
 #This little function takes care of annotating the plots.
 lverbose = function(variable,value){
     if(variable == "s"){
-        sapply(value,function(val) substitute(paste(sigma[0]," = ",foo,", ",n[1]," = ",n1,sep=''),
-                                              list(foo=val,n1=ceiling(1/2*zss(val,1,.025,.2)))))
+        sapply(value,function(val) substitute(paste(sigma[0]," = ",foo,", ",2*n[1]," = ",n1,sep=''),
+                                              list(foo=val,n1=2*ceiling(1/2*zss(val,1,.025,.2)))))
     } else {
         sapply(value,function(val) substitute(paste(sigma," = ",foo,sep=""),list(foo=val)))
     }
@@ -265,7 +265,7 @@ larger than the standard error of the adaptive design.
 <<results='hide',echo=F,warning=F>>=
 tupd.vm.bias <- ggplot(gridsim,mapping=aes(x=delta,y=vm)) +geom_line(lty=1) +
     geom_path(aes(y=ev),lty=2) + geom_path(aes(y=exv),lty=3) +
-    facet_grid(sigma~s,labeller=lverbose) + theme_bw() +
+    facet_grid(sigma~s,labeller=lverbose) + theme_bw() + geom_blank(aes(x=delta,y=ylow)) +
     xlab(expression(delta)) + ylab('Variance of the mean estimate')
 
 print(tupd.vm.bias)
@@ -278,7 +278,7 @@ print(tupd.vm.bias)
 tupd.uc.vm.bias <- ggplot(gridsim,mapping=aes(x=delta,y=uc.vm)) +
     geom_line(lty=1) + geom_path(aes(y=uc.ev),lty=2) +
     geom_path(aes(y=uc.exv),lty=3) + facet_grid(sigma~s,labeller=lverbose) +
-    theme_bw() + xlab(expression(delta)) +
+    theme_bw() + xlab(expression(delta)) + geom_blank(aes(x=delta,y=ylow)) +
     ylab('Variance of the mean estimate')
 
 print(tupd.uc.vm.bias)
@@ -308,4 +308,5 @@ dev.off()
 cairo_ps('var_bias.eps')
 print(tupd.var.bias)
 dev.off()
-@
+@ 
+
