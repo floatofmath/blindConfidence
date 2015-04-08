@@ -202,7 +202,7 @@ $\Sexpr{100*round(casesim[uc.max.nc.total,'uc.total.prob']-.05,3)}$
 percentage points, respectively. The actual coverage probabilities are
 smallest for large absolute values of the true mean difference and
 standard deviations of around $5$.
-
+    
 If the sample size reassessment is based on the adjusted variance
 estimate, the absolute bias of the variance and mean estimate will be
 even larger taking values up to $\Sexpr{abs(round(casesim[max.var.bias,'variance.bias'],2))}$ for the
@@ -218,11 +218,11 @@ two-sided intervals.
 
 
 <<eval=T,echo=F,include=F>>=
-lverbose = function(variable,value){
-    if(variable == "s"){
-        sapply(value,function(val) substitute(paste(delta[0], " = 5.5, " ,sigma[0], " = ",foo,sep=''),list(foo=val,n1=ceiling((15/34)*zss(val,5.5,.025,.2)))))
-    } else {
+lverbose = function(variable,value,...){
+    if(variable == "sigma"){
         sapply(value,function(val) substitute(paste(sigma," = ",foo,sep=""),list(foo=val)))#label_parsed(variable,label_both(variable,value))
+    } else {
+        label_value(variable,value)
     }
 }
 
@@ -259,7 +259,7 @@ tupd.ass <- ggplot(tcasesim,mapping=aes(x=delta,y=(mean.m1+n1))) +
   facet_grid(s~sigma,labeller=lverbose) + theme_bw() + xlab(expression(delta)) + ylab('ASN')+ggtitle('ASN')+ylim(0,70)
 @ 
 
-<<echo=F,>>=
+<<echo=F>>=
 ## this chunk produces the file that goes into the paper
 multiplot(tupd.uc,tupd.mean.bias,tupd.variance.bias,
           titles=c(expression(paste("Actual - nominal coverage probabilities (",n[2]^u,")")),
@@ -268,6 +268,29 @@ multiplot(tupd.uc,tupd.mean.bias,tupd.variance.bias,
               "Variance Bias") #,
                                         #"Average Sample Number")
           )
+
+df <- rbind(tcasesim,tcasesim,tcasesim)
+df$variable <- rep(c("Actual - Nominal","Bias Of The Mean","Bias Of The Variance"),each=nrow(tcasesim))
+
+mplot <- ggplot(df) + facet_grid(variable~sigma,scales='free_y',labeller=lverbose) +
+    geom_path(aes(delta,uc.mean.bias),subset=.(variable  == "Bias Of The Mean")) +
+    geom_path(aes(delta,mean.bias),lty=2,subset=.(variable  == "Bias Of The Mean")) +
+    geom_path(aes(delta,mean.upper.bias),lty=3,col='red',subset=.(variable  == "Bias Of The Mean"))+
+    geom_path(aes(delta,-mean.upper.bias),lty=3,col='red',subset=.(variable  == "Bias Of The Mean"))+
+    geom_path(aes(delta,brannath),lty=3,col='darkgreen',subset=.(variable  == "Bias Of The Mean" & brannath < 1.6))+
+    geom_path(aes(delta,-brannath),lty=3,col='darkgreen',subset=.(variable  == "Bias Of The Mean" & brannath < 1.6))+
+    geom_path(aes(delta,uc.variance.bias),subset=.(variable == "Bias Of The Variance")) +
+    geom_path(aes(delta,variance.bias),lty=2,subset=.(variable == "Bias Of The Variance")) +
+    geom_path(aes(delta,bound),col='red',subset=.(variable == "Bias Of The Variance")) +
+    geom_path(aes(x=delta,y=.025-uc.upper.prob),lty=2,subset=.(variable=="Actual - Nominal")) +
+    geom_line(aes(x=delta,y=0),colour='gray',subset=.(variable=="Actual - Nominal")) +
+    geom_path(aes(x=delta,y=.025-uc.lower.prob),lty=3,subset=.(variable=="Actual - Nominal")) +
+        geom_path(aes(x=delta,y=.05-uc.total.prob),subset=.(variable=="Actual - Nominal")) +
+    geom_blank(aes(x=-5,y=-0.02),subset=.(variable=="Actual - Nominal")) +
+    geom_blank(aes(x=-5,y=0.01),subset=.(variable=="Actual - Nominal")) + ylab('')+xlab(expression(delta))
+
+
+
 @ 
 
 \bibliography{imsrefsjoined}
@@ -281,12 +304,17 @@ multiplot(tupd.uc,tupd.mean.bias,tupd.variance.bias,
 <<eval=F,echo=F>>=
 ## this chunk produces the file that goes into the paper
 cairo_ps('case.eps',height=7,width=7)
+
 multiplot(tupd.uc,tupd.mean.bias,tupd.variance.bias,
-          titles=c(expression(paste("Actual - nominal coverage probabilities (",n[2]^u,")")),
-              #expression(paste("Actual-nominal coverage probabilities (",n[2]^a,")")),
-              "Mean Bias",
-              "Variance Bias") #,
+          titles=c("",
+              "",
+              "") #,
                                         #"Average Sample Number")
           )
 dev.off()
+
+cairo_ps('case.eps',height=5)
+print(mplot)
+dev.off()
+
 @ 

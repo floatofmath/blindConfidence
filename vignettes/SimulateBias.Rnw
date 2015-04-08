@@ -161,7 +161,7 @@ tupd <- ggplot(gridsim,mapping=aes(x=delta,y=.025-upper.prob)) +
     geom_path(aes(y=.025-lower.prob),lty=3) + 
     geom_path(aes(y=.05-total.prob)) + 
     facet_grid(sigma~s,labeller=lverbose) + theme_bw() + ylim(-.025,.01) +
-    xlab(expression(delta)) + ylab('actual - nominal coverage')
+    xlab(expression(delta)) + ylab('Actual - Nominal Coverage')
 print(tupd)
 @
 
@@ -178,7 +178,7 @@ tupd.uc <- ggplot(gridsim,mapping=aes(x=delta,y=.025-uc.upper.prob)) +
     geom_path(aes(y=.025-uc.lower.prob),lty=3) + 
     geom_path(aes(y=.05-uc.total.prob)) + 
     facet_grid(sigma~s,labeller=lverbose) + theme_bw()+
-    ylim(-.025,.01) + xlab(expression(delta)) + ylab('actual -nominal coverage')
+    ylim(-.025,.01) + xlab(expression(delta)) + ylab('Actual - Nominal Coverage')
 print(tupd.uc)
 
 @
@@ -203,7 +203,7 @@ tupd.mean.bias <- ggplot(gridsim,mapping=aes(x=delta,y=mean.bias)) +
     geom_path(aes(y=brannath),lty=3,col='darkgreen') +
     geom_path(aes(y=-brannath),lty=3,col='darkgreen') +
     facet_grid(sigma~s,labeller=lverbose) + theme_bw() +
-    xlab(expression(delta)) + ylab('bias') + ylim(-.2,.2)
+    xlab(expression(delta)) + ylab('Bias Of The Mean') + ylim(-.2,.2)
 print(tupd.mean.bias)
 
 @
@@ -218,7 +218,7 @@ tupd.var.bias <- ggplot(gridsim,mapping=aes(x=delta,y=variance.bias)) +
     geom_line(y=0,colour='gray') + geom_path(aes(y=bound),color="red") +
     geom_path(lty=2) + geom_path(aes(y=uc.variance.bias),lty=1) +
     facet_grid(sigma~s,labeller=lverbose) + theme_bw() + ylim(-0.4,0.1) +
-    xlab(expression(delta)) + ylab('bias')
+    xlab(expression(delta)) + ylab('Bias Of The Variance')
 print(tupd.var.bias)
 
 @
@@ -266,7 +266,7 @@ larger than the standard error of the adaptive design.
 tupd.vm.bias <- ggplot(gridsim,mapping=aes(x=delta,y=vm)) +geom_line(lty=1) +
     geom_path(aes(y=ev),lty=2) + geom_path(aes(y=exv),lty=3) +
     facet_grid(sigma~s,labeller=lverbose) + theme_bw() + geom_blank(aes(x=delta,y=ylow)) +
-    xlab(expression(delta)) + ylab('Variance of the mean estimate')
+    xlab(expression(delta)) + ylab('Variance Of The Mean Estimate')
 
 print(tupd.vm.bias)
 @
@@ -279,7 +279,7 @@ tupd.uc.vm.bias <- ggplot(gridsim,mapping=aes(x=delta,y=uc.vm)) +
     geom_line(lty=1) + geom_path(aes(y=uc.ev),lty=2) +
     geom_path(aes(y=uc.exv),lty=3) + facet_grid(sigma~s,labeller=lverbose) +
     theme_bw() + xlab(expression(delta)) + geom_blank(aes(x=delta,y=ylow)) +
-    ylab('Variance of the mean estimate')
+    ylab('Variance Of The Mean Estimate')
 
 print(tupd.uc.vm.bias)
 
@@ -290,6 +290,8 @@ print(tupd.uc.vm.bias)
 
 <<eval=F,echo=F,include=F>>=
 ## this chunk produces the files that go into the paper
+setwd('~/Dropbox/msi/2013/research/blind_confidence/rssversion/graphs/')
+
 cairo_ps('coverage.eps')
 print(tupd)
 dev.off()
@@ -308,5 +310,7 @@ dev.off()
 cairo_ps('var_bias.eps')
 print(tupd.var.bias)
 dev.off()
-@ 
+
+@
+
 
