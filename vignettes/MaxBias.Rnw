@@ -120,10 +120,15 @@ Figure \ref{fig:maxbias} shows the results.
 
 <<maxbias,echo=F,fig.cap="Maximum attainable mean bias for a given first stage sample size: Left column shows data for absolute bias, right column for relative bias (in units of the standard error). First row gives maximum bias, second the difference of means, third the standard deviation and fourth the variance of the mean where the maximum is attained.">>=
 
-gridsim <- within(gridsim,{relbias <- mean.bias/sqrt(vm)
-                           uc.relbias <- uc.mean.bias/sqrt(uc.vm)})
+## gridsim <- within(gridsim,{relbias <- mean.bias/(delta+sqrt(vm))
+##                            uc.relbias <- uc.mean.bias/(delta+sqrt(vm))})
+gridsim <- within(gridsim,{relbias <- mean.bias/(delta)
+                           uc.relbias <- uc.mean.bias/(delta)})
+gridsims <- subset(gridsim,delta>0 & n1 > 1)
 
-max.bias <- ddply(gridsim,"n1",summarise,
+ggplot(gridsims,aes(delta,-relbias))+geom_line(subset=.(sigma==.5),aes(colour=factor(n1)))
+
+max.bias <- ddply(gridsims,"n1",summarise,
                   max.mean.bias= -min(mean.bias),
                   max.mean.bias.delta = delta[which.min(mean.bias)],
                   max.mean.bias.sigma = sigma[which.min(mean.bias)],
@@ -153,7 +158,8 @@ df <- within(df,method <- factor((2:1)[grepl("uc",variable)+1],labels=c("unadjus
 df <- within(df,variable <- sub("rel\\.","",variable))
 df <- within(df,variable <- sub("uc\\.","",variable))
 df <- within(df,variable <- factor(variable,labels=c('maximum mean bias',expression(delta),expression(sigma))))
-dfa <- df[df$scale=="absolute",]
+
+dfa <- df[df$scale=="relative",]#"absolute",]
 scalehelper <- data.frame(n1=rep(-10,3),variable=factor(1:3,label=c("maximum mean bias",expression(delta),expression(sigma))),value=rep(0,3),scale=rep("absolute",3),method=rep("adjusted",3))
 dfa <- rbind(dfa,scalehelper)
 mplot <- ggplot(dfa,aes(2*n1,value))+
@@ -164,6 +170,8 @@ print(mplot)
 
 ## relativer bias (constallation die den bias,bzw,type I error, maximiert)
 @ 
+
+
 
 <<maxVarbias,echo=F>>=
 max.varbias <- ddply(gridsim,"n1",summarise,
@@ -194,6 +202,7 @@ print(vplot)
 
 
 @
+
 \end{document}
 
 
