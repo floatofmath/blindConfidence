@@ -104,14 +104,22 @@ gridsim <- subset(full.sim,d==1 & sigma>=.5)
 
 <<results='hide',include=F,echo=F>>=
 #This little function takes care of annotating the plots.
-lverbose = function(variable,value){
-    if(variable == "variable"){
-        c('Max. Mean Bias [%]',expression(delta),expression(sigma))
-        ## sapply(value,function(val) substitute(paste(sigma[0]," = ",foo,", ",2n[1]," = ",n1,sep=''),
-        ##                                       list(foo=val,n1=ceiling(1/2*zss(val,1,.025,.2)))))
-    } else {
-        c("Unadjusted","Adjusted")
+lverbose = function(variable,value,string=NULL){
+    f <- function(variable,value){
+        if(variable == "variable"){
+            c(string,expression(delta),expression(sigma))
+            ## sapply(value,function(val) substitute(paste(sigma[0]," = ",foo,", ",2n[1]," = ",n1,sep=''),
+            ##                                       list(foo=val,n1=ceiling(1/2*zss(val,1,.025,.2)))))
+        } else {
+              c("Unadjusted","Adjusted")
+          }
     }
+    if(is.null(string)){
+        string <- 'Max. Mean Bias [%]'
+        return(f(variable,value))
+    } else {
+          return(f)
+      }
 }
 
 @
@@ -181,7 +189,7 @@ print(mplot)
 
 
 
-<<maxVarbias,echo=F>>=
+<<maxVarbias,echo=F,eval=F>>=
 max.varbias <- ddply(gridsim,"n1",summarise,
                   max.variance.bias= -min(variance.bias),
                   max.variance.bias.delta = delta[which.min(variance.bias)],
@@ -207,6 +215,36 @@ vplot <- ggplot(dfa,aes(2*n1,value))+
     facet_grid(variable~method,scale='free_y',labeller=lverbose) +xlab(expression(paste("Total First Stage Sample Size ",2*n[1])))+ylab('Value')+theme_bw()+xlim(c(2,150))
 print(vplot)
 
+
+
+@
+
+<<maxVarbias,echo=F,eval=F>>=
+max.coverage <- ddply(gridsim,"n1",summarise,
+                  max.coverage = max(total.prob)-.05,
+                  max.coverage.bias.delta = delta[which.max(total.prob)],
+                  max.coverage.bias.sigma = sigma[which.max(total.prob)],
+                  uc.max.coverage= max(uc.total.prob)-.05,
+                  uc.max.coverage.bias.delta = delta[which.max(uc.total.prob)],
+                  uc.max.coverage.bias.sigma = sigma[which.max(uc.total.prob)]
+                  )
+
+
+df <- melt(max.coverage,id='n1')
+df <- within(df,scale <- c("absolute","relative")[grepl("rel",variable)+1])
+df <- within(df,method <- factor((2:1)[grepl("uc",variable)+1],labels=c("unadjusted","adjusted")))
+df <- within(df,variable <- sub("rel\\.","",variable))
+df <- within(df,variable <- sub("uc\\.","",variable))
+df <- within(df,variable <- factor(variable,labels=c('noncoverage',expression(delta),expression(sigma))))
+dfa <- df[df$scale=="absolute",]
+scalehelper <- data.frame(n1=rep(-10,3),variable=factor(1:3,label=c("noncoverage",expression(delta),expression(sigma))),value=rep(0,3),scale=rep("absolute",3),method=rep("adjusted",3))
+dfa <- rbind(dfa,scalehelper)
+cplot <- ggplot(dfa)+
+    geom_line(aes(2*n1,100*value),subset=.(variable=="noncoverage")) +
+    geom_smooth(aes(2*n1,value),subset=.(variable!="noncoverage")) + geom_point(aes(2*n1,value),subset=.(variable!="noncoverage"),size=1) +
+    facet_grid(variable~method,scale='free_y',labeller=lverbose(string='Actual - Nominal Coverage [%]')) +xlab(expression(paste("Total First Stage Sample Size ",2*n[1])))+ylab('Value')+theme_bw()+xlim(c(2,150))
+print(cplot)
+    
 
 
 @

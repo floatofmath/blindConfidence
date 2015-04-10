@@ -318,3 +318,47 @@ print(mplot)
 dev.off()
 
 @ 
+
+<<oldplot,eval=F,echo=F,include=F>>
+## this chunk produces the file that goes into the paper
+
+tupd <- ggplot(tcasesim,mapping=aes(x=delta,y=.025-upper.prob)) +
+    geom_line(y=0,colour='gray') +
+    geom_path(lty=2) + #geom_point(shape='u') +
+    geom_path(aes(y=.025-lower.prob),lty=3) + #geom_point(aes(y=.025-lower.prob),shape='l') +
+    geom_path(aes(y=.05-total.prob)) + #geom_point(aes(y=.05-total.prob),shape='t') +
+    facet_grid(s~sigma,labeller=lverbose) + theme_bw() + ylim(-.02,.01) + xlab(expression(delta)) + ylab('AC-NC')
+tupd.uc <- ggplot(tcasesim,mapping=aes(x=delta,y=.025-uc.upper.prob)) +
+    geom_line(y=0,colour='gray') +
+    geom_path(lty=2) + # geom_point(shape='u') +
+    geom_path(aes(y=.025-uc.lower.prob),lty=3) + #geom_point(aes(y=.025-uc.lower.prob),shape='l') +
+    geom_path(aes(y=.05-uc.total.prob)) + #geom_point(aes(y=.05-uc.total.prob),shape='t') +
+    facet_grid(s~sigma,labeller=lverbose) + theme_bw()+  ylim(-.02,.01) + xlab(expression(delta)) + ylab('AC-NC')
+tupd.variance.bias <- ggplot(tcasesim,mapping=aes(x=delta,y=variance.bias)) +
+    geom_line(y=0,colour='gray') + geom_path(aes(y=bound),color="red") +
+  geom_path(lty=2) + geom_path(aes(y=uc.variance.bias),lty=1) +#geom_point(shape='V') + geom_point(aes(y=mean.bias),shape='M') +
+  facet_grid(s~sigma,labeller=lverbose) + theme_bw() + xlab(expression(delta)) + ylab('Bias')
+tupd.mean.bias <- ggplot(tcasesim,mapping=aes(x=delta,y=mean.bias)) + geom_path(lty=2)+
+  geom_line(y=0,colour='gray') + geom_path(aes(y=mean.upper.bias),lty=3,col='red') + geom_path(aes(y=mean.lower.bias),lty=3,col='red') +
+  geom_path(aes(y=uc.mean.bias),lty=1) + geom_path(aes(y=brannath),lty=3,col='darkgreen') + geom_path(aes(y=-brannath),lty=3,col='darkgreen') +
+  facet_grid(s~sigma,labeller=lverbose) + theme_bw()  + xlab(expression(delta)) + ylab('Bias') + ggtitle('Mean Bias') +  ylim(-1.5,1.5)
+tupd.mean.bias.sem <- ggplot(tcasesim,mapping=aes(x=delta,y=mean.bias/(sigma/sqrt(n1)))) +
+  geom_line(y=0,colour='gray') +  
+  geom_path(lty=1) + geom_path(aes(y=uc.mean.bias/(sigma/sqrt(n1))),lty=2) + 
+  facet_grid(s~sigma,labeller=lverbose) + theme_bw() + xlab(expression(delta)) + ylab('bias')+ggtitle('Mean Bias (SEM Scaled)')
+tupd.ass <- ggplot(tcasesim,mapping=aes(x=delta,y=(mean.m1+n1))) +
+  geom_line(y=0,colour='gray') +  
+  geom_path(lty=1) + geom_path(aes(y=uc.mean.m1+n1),lty=2) +#geom_point(shape='V') +geom_point(aes(y=uc.mean.bias),shape='M') +
+  facet_grid(s~sigma,labeller=lverbose) + theme_bw() + xlab(expression(delta)) + ylab('ASN')+ggtitle('ASN')+ylim(0,70)
+
+multiplot(tupd.uc,tupd.mean.bias,tupd.variance.bias,
+          titles=c(expression(paste("Actual - nominal coverage probabilities (",n[2]^u,")")),
+              #expression(paste("Actual-nominal coverage probabilities (",n[2]^a,")")),
+              "Mean Bias",
+              "Variance Bias") #,
+                                        #"Average Sample Number")
+          )
+
+
+
+@
