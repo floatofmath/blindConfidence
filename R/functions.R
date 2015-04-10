@@ -213,7 +213,6 @@ simVBIA <- function(delta, # true effect size
 ##' @param ... any number of simulation results from \code{simVBIA} with \code{fulldata} set to \code{TRUE}
 ##' @return a simulation result object
 ##' @author float
-##' @export
 combine_simVBIA <- function(...){
     param <- sapply(list(...),tail,5)
     test <- apply(param,1,function(th) all(th[-1] %in% th[1]))
@@ -231,7 +230,6 @@ combine_simVBIA <- function(...){
 ##' @return summary statistics over simulation results
 ##' @template simvbia
 ##' @author float
-##' @export
 summary_simVBIA <- function(simresults){
     c(lower.prob=simresults$sim[,sum({diffmu-bar}>simresults$delta)/simresults$runs],
       upper.prob=simresults$sim[,sum({diffmu+bar}<simresults$delta)/simresults$runs],
