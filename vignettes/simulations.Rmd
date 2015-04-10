@@ -1,0 +1,800 @@
+---
+title: "Estimation after blinded interim analysis"
+subtitle: "Numerical results"
+author: Florian Klinglmueller
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteIndexEntry{Vignette Title}
+  \usepackage[utf8]{inputenc}
+---
+
+```{r knitr options,echo=F}
+knitr::opts_chunk$set(echo=FALSE,warning=FALSE,results='hide',fig.width=7,fig.height=7)
+```
+
+This vignette presents the numerical results of the article
+``Estimation after blinded interim analysis''. Simply compiling the
+Rmarkdown file using *knitr* will recompute all figures using stored
+simulation results. To rerun the simulations the corresponding R
+chunks can be reconfigured so that they will be evaluated on
+compilation. Note that this may take a very long time and require
+considerable amount of main memory - publication results were computed
+on a simulation server providing 40 processor cores and 64 GB of shared
+memory. Note that the code has been optimized to run on Linux, so while
+the package should work fine on Windows in theory, it has not been
+tested.
+
+# Coverage probabilities and bias of the mean and variance estimates
+
+## Introduction
+
+In a first simulation study we investigated the coverage probabilities
+of conventional t-test confidence intervals following blinded interim
+analysis, as well as the bias of the estimates of the mean and
+variance. The second stage sample size was computed based on the
+blinded first stage data using either the adjusted or the unadjusted
+variance estimate.  For each stage normally distributed test
+statistics were generated for a control and a treatment group assuming
+balanced allocation.
+
+
+```{r libraries}
+## For running the simulations and plotting the results the following
+## packages have to be loaded:
+library(parallel)
+library(blindConfidence)
+library(ggplot2)
+library(reshape2)
+library(plyr)
+options(mc.cores=pmax(1,detectCores()-2))
+
+``` 
+
+
+```{r utility functions,results='hide',include=F,echo=F}
+#This little function takes care of annotating the plots.
+lverbose = function(variable,value){
+    if(variable == "s"){
+        sapply(value,function(val) substitute(paste(sigma[0]," = ",foo,", ",2*n[1]," = ",n1,sep=''),
+                                              list(foo=val,n1=2*ceiling(1/2*zss(val,1,.025,.2)))))
+    } else {
+        sapply(value,function(val) substitute(paste(sigma," = ",foo,sep=""),list(foo=val)))
+    }
+}
+```
+
+
+```{r parameter grid}
+## The next chunk generates the matrix of parameters for which
+## simulations are run.
+G <- expand.grid(delta=round(seq(-2,2,.2),2),
+                 sigma=round(c(.1,.25,seq(.5,2,.5)),2),
+                 d = c(.2,.6,1,2),
+                 s = round(seq(.5,2,.5),2))
+G$n1 <- ceiling(1/2*zss(G$s,G$d,.025,.2))
+```
+
+We assume that the pre-planned sample size of the trial was planned to
+ reach a target power of 80% (using the normal approximation) assuming
+ an effect size $\delta=1$, standard deviations $\hat{\sigma}$ between
+ $0.5$ and 2 in steps of $.5$ and a one-sided significance level
+ $\alpha=0.025$. The first stage sample size $n_1$ was set to halve of
+ the pre-planned sample size. The simulations were performed in R with
+ $10^6$ simulation runs per scenario.
+
+
+```{r run simulation,eval=FALSE}
+## The next chunk runs the simulations by applying the simulation
+## function, in parallel, across rows of the parameter grid $G$, which
+## contains the parameter settings for each scenario. In order to rerun
+## them it has to be reconfigured for evaluation. Note that running the
+## simulations may take quite long.
+set.seed(50014056)
+runs <- 10^6
+gridsim <- t(simplify2array(mclapply(1:nrow(G),
+                                     function(i) {c(G[i,],
+                                                    simVBIA(delta=G[i,]$delta,
+                                                            sigma=G[i,]$sigma,
+                                                            d=G[i,]$d,
+                                                            s=G[i,]$s,
+                                                            cf=1,
+                                                            runs=runs,
+                                                            alpha=.025,
+                                                            beta=.2))})))
+
+
+gsim <- as.data.frame(t(apply(gridsim,1,unlist)))
+
+## compute relative bias
+gsim$var.rbias <- gsim$variance.bias/gsim$sigma^2
+
+## compute the theoretical lower bound for the variance bias
+gsim$bound <- lowerBound(gsim$n1,gsim$d)
+
+runs <- 10^5
+bsim <- mclapply(1:nrow(gsim),function(i) {c(gsim[i,],
+                                             simMBIA(delta=gsim[i,]$delta,
+                                                     sigma=gsim[i,]$sigma,
+                                                     n1=gsim[i,]$n1,
+                                                     runs=runs))})
+
+bsim <- do.call('cbind',bsim)
+bsim <- as.data.frame(apply(bsim,1,unlist),row.names=NA)
+
+gridsim <- bsim
+gridsim$brannath <- .4*sqrt(2)*gridsim$sigma/sqrt(gridsim$n1)
+
+```
+
+```{r save results,eval=FALSE,echo=FALSE}
+fname <- paste('gridsim_',format(Sys.time(),"%y%m%d"),'.Rd',sep='')
+save(gridsim,file=fname)
+```
+
+## Results
+
+The data used in the final manuscript version, is distributed with this
+package and can be loaded with the command `data(gridsim)`. 
+
+```{r load data}
+data(gridsim)
+
+full.sim <- gridsim
+
+gridsim <- subset(full.sim,d==1 & sigma>=.5)
+gridsim$ylow <- 0
+
+```
+
+## Coverage probability of confidence intervals
+
+
+First we show results
+for designs that reassess the sample size based on the adjusted
+interim variance estimate. Negative values correspond to situations
+where the actual coverage is smaller than the nominal coverage. In
+this case the coresponding confidence intervals become liberal. 
+
+### Adjusted interim variance estimate
+
+We plot how far the coverage probabilities of one and two-sided
+confidence intervals deviate from their nominal coverage if sample
+sizes are reassessed using the adjusted variance estimator. 
+
+```{r CPnA,results='hide',echo=F,warning=F} 
+## In this and the following chunks we set up the figures using *ggplot2*
+## objects. 
+tupd <- ggplot(gridsim,mapping=aes(x=delta,y=.025-upper.prob)) +
+    geom_line(y=0,colour='gray') +
+    geom_path(lty=2) + 
+    geom_path(aes(y=.025-lower.prob),lty=3) + 
+    geom_path(aes(y=.05-total.prob)) + 
+    facet_grid(sigma~s,labeller=lverbose) + theme_bw() + ylim(-.025,.01) +
+    xlab(expression(delta)) + ylab('Actual - Nominal Coverage')
+print(tupd)
+```
+
+### Unadjusted interim variance estimate
+
+Then also for designs that use the unadjusted lumped variance at
+interim.
+
+```{r CPnU,results='hide',echo=F,warning=F}
+
+tupd.uc <- ggplot(gridsim,mapping=aes(x=delta,y=.025-uc.upper.prob)) +
+    geom_line(y=0,colour='gray') +
+    geom_path(lty=2) + 
+    geom_path(aes(y=.025-uc.lower.prob),lty=3) + 
+    geom_path(aes(y=.05-uc.total.prob)) + 
+    facet_grid(sigma~s,labeller=lverbose) + theme_bw()+
+    ylim(-.025,.01) + xlab(expression(delta)) + ylab('Actual - Nominal Coverage')
+print(tupd.uc)
+
+```
+
+## Bias of the effect size estimate
+
+Next we look at estimates of the mean difference between treatment
+groups. Solid lines show the mean bias for designs where sample sizes
+are adjusted based on the adjusted interim variance estimate, dashed
+lines for designs where sample sizes are adjusted based on the
+unadjusted interim variance estimate. The dotted lines show the
+bias of the mean estimate using a samplesize reassessment rule is used
+in order to maximize the negative or positive bias, respectively.
+
+```{r Bias_delta,results='hide',echo=F,warning=F}
+tupd.mean.bias <- ggplot(gridsim,mapping=aes(x=delta,y=mean.bias)) +
+    geom_path(lty=2) + geom_line(y=0,colour='gray') +
+    geom_path(aes(y=m.bias),lty=3,col='red') +
+    geom_path(aes(y=m.bias.n),lty=3,col='red') +
+    geom_path(aes(y=uc.mean.bias),lty=1) +
+    geom_path(aes(y=brannath),lty=3,col='darkgreen') +
+    geom_path(aes(y=-brannath),lty=3,col='darkgreen') +
+    facet_grid(sigma~s,labeller=lverbose) + theme_bw() +
+    xlab(expression(delta)) + ylab('Bias Of The Mean') + ylim(-.4,.4)
+print(tupd.mean.bias)
+```
+
+## Bias of the variance estimate
+
+Next we look at variance estimates. 
+
+```{r Bias_sigma2,results='hide',echo=F,warning=F}
+tupd.var.bias <- ggplot(gridsim,mapping=aes(x=delta,y=variance.bias)) +
+    geom_line(y=0,colour='gray') + geom_path(aes(y=bound),color="red") +
+    geom_path(lty=2) + geom_path(aes(y=uc.variance.bias),lty=1) +
+    facet_grid(sigma~s,labeller=lverbose) + theme_bw() + ylim(-0.3,0.1) +
+    xlab(expression(delta)) + ylab('Bias Of The Variance')
+print(tupd.var.bias)
+```
+
+## Estimates of the variance of the mean estimate (square standard error)
+
+In each simulated trial we estimated the standard error of the mean,
+and compute the standard error of a fixed sample trial with the same
+final sample size. Finally, we compute the standard deviation of the
+mean estimate across all Monte Carlo samples, which is an unbiased
+estimate of the true standard error of the mean. Figure ? shows the
+results for designs that use the corrected interim variance estimate
+to reassess the sample size; Figure ? shows the results for designs
+that use the unadjusted interim variance estimate. Solid lines show
+the standard deviation of mean estimates across simulated trials,
+dashed lines show the average standard error estimates across
+simulated trials, dotted lines show the average of the true standard
+errors of corresponding fixed sample designs. The true standard error
+of the mean of an adaptive design with blinded sample size
+reassessment is smaller than that of corresponding fixed sample
+design. The bias of the estimate of the standard error is close to
+zero around the null hypothesis.  This holds both for designs using
+the adjusted and unadjusted interim variance estimates to reassess the
+sample size. It explains why there is practically no inflation of the
+coverage probability of confidence intervals near the null hypotheses,
+even though the variance estimate has a considerable negative bias.
+
+An explanation is given in the following figure where we plot the
+standard error of the mean, averaged across all simulated trials; the
+standard error of the mean of a fixed sample desig the standard
+deviation of the mean estimate across all monte-carlo samples
+(i.e. the true standard error of the mean) of a given parameter
+setting (dashed line); the Conditional on the second stage sample size
+the estimate of the standard error is smaller than the standard error
+of a fixed sample design with equal sample size. However the true
+variance of the mean - as estimated from all monte carlo samples - is
+estimated across all simulation runs. This shows that the
+standard error of a fixed sample design with average sample size is
+larger than the standard error of the adaptive design.
+
+### Adjusted interim variance estimate
+
+```{r Standard_errors_nA,results='hide',echo=F,warning=F}
+tupd.vm.bias <- ggplot(gridsim,mapping=aes(x=delta,y=vm)) +geom_line(lty=1) +
+    geom_path(aes(y=ev),lty=2) + geom_path(aes(y=exv),lty=3) +
+    facet_grid(sigma~s,labeller=lverbose) + theme_bw() + geom_blank(aes(x=delta,y=ylow)) +
+    xlab(expression(delta)) + ylab('Variance Of The Mean Estimate')
+
+print(tupd.vm.bias)
+```
+
+### Unadjusted interim variance estimate
+
+```{r Standard_errors_nU,results='hide',echo=F,warning=F}
+
+tupd.uc.vm.bias <- ggplot(gridsim,mapping=aes(x=delta,y=uc.vm)) +
+    geom_line(lty=1) + geom_path(aes(y=uc.ev),lty=2) +
+    geom_path(aes(y=uc.exv),lty=3) + facet_grid(sigma~s,labeller=lverbose) +
+    theme_bw() + xlab(expression(delta)) + geom_blank(aes(x=delta,y=ylow)) +
+    ylab('Variance Of The Mean Estimate')
+
+print(tupd.uc.vm.bias)
+
+```
+
+
+```{r Export graph files,eval=F,echo=F,include=F}
+## this chunk produces the files that go into the paper
+setwd('~/Dropbox/msi/2013/research/blind_confidence/rssversion/graphs/')
+
+cairo_ps('coverage.eps')
+print(tupd)
+dev.off()
+cairo_ps('uc_coverage.eps')
+print(tupd.uc)
+dev.off()
+cairo_ps('varmeanBias.eps')
+print(tupd.vm.bias)
+dev.off()
+cairo_ps('uc_varmeanBias.eps')
+print(tupd.uc.vm.bias)
+dev.off()
+cairo_ps('mean_bias.eps')
+print(tupd.mean.bias)
+dev.off()
+cairo_ps('var_bias.eps')
+print(tupd.var.bias)
+dev.off()
+
+```
+
+# Maximum bias of the mean estimate and worst case inflation of the non-coverage 
+
+We also looked at the maximum bias that may be attained (using the
+adjusted sample size reassessment rule) for a given first stage sample
+size. 
+
+## Introduction
+
+
+We simulate adaptive trials for true differences of means between 0
+and 4, true standard deviations between .2 and 4 and (total) first
+stage sample sizes between 4 and 142. 
+
+```{r parameter grid maximum bias}
+G <- expand.grid(delta=round(seq(0,4,.1),2),
+                 sigma=round(seq(.2,4,.2),2),
+                 d = c(1),
+                 s = round(seq(.5,3,.1),2))
+G$n1 <- ceiling(1/2*zss(G$s,G$d,.025,.2))
+apply(G,2,summary)
+```
+
+
+
+```{r run simulations,eval=FALSE,echo=FALSE}
+
+set.seed(50014056)
+runs <- 5*10^6
+system.time(gridsim <- t(simplify2array(mclapply(1:nrow(G),
+                                                 function(i) {c(G[i,],
+                                                                simVBIA(delta=G[i,]$delta,
+                                                                        sigma=G[i,]$sigma,
+                                                                        d=G[i,]$d,
+                                                                        s=G[i,]$s,
+                                                                        cf=1,
+                                                                        runs=runs,
+                                                                        alpha=.025,
+                                                                        beta=.2))}))))
+
+
+gsim <- as.data.frame(t(apply(gridsim,1,unlist)))
+
+## compute relative bias
+gsim$var.rbias <- gsim$variance.bias/gsim$sigma^2
+
+## compute the theoretical lower bound for the variance bias
+gsim$bound <- lowerBound(gsim$n1,gsim$d)
+
+runs <- 10^5
+bsim <- mclapply(1:nrow(gsim),function(i) {c(gsim[i,],
+                                             simMBIA(delta=gsim[i,]$delta,
+                                                     sigma=gsim[i,]$sigma,
+                                                     n1=gsim[i,]$n1,
+                                                     runs=runs))})
+
+bsim <- do.call('cbind',bsim)
+bsim <- as.data.frame(apply(bsim,1,unlist),row.names=NA)
+
+gridsim <- bsim
+gridsim$brannath <- .4*sqrt(2)*gridsim$sigma/sqrt(gridsim$n1)
+
+```
+
+
+For each scenario we perform $10^6$ simulation runs.
+
+
+```{r,eval=FALSE,echo=FALSE}
+fname <- paste('maxsim_',format(Sys.time(),"%y%m%d"),'.Rd',sep='')
+save(gridsim,file=fname)
+```
+
+
+## Results
+
+
+```{r load data maximum bias,echo=F}
+data(maxsim)
+
+full.sim <- gridsim
+gridsim$ylow <- 0
+gridsim <- subset(full.sim,d==1 & sigma>=.5)
+
+```
+
+```{r plot labeller,results='hide',include=F,echo=F}
+#This little function takes care of annotating the plots.
+lverbose = function(variable,value,string=NULL){
+    f <- function(variable,value){
+        if(variable == "variable"){
+            c(string,expression(delta),expression(sigma))
+            ## sapply(value,function(val) substitute(paste(sigma[0]," = ",foo,", ",2n[1]," = ",n1,sep=''),
+            ##                                       list(foo=val,n1=ceiling(1/2*zss(val,1,.025,.2)))))
+        } else {
+              c("Unadjusted","Adjusted")
+          }
+    }
+    if(is.null(string)){
+        string <- 'Max. Mean Bias [%]'
+        return(f(variable,value))
+    } else {
+          return(f)
+      }
+}
+
+```
+
+Figure \ref{fig:maxbias} shows the results.
+
+```{r maxbias,echo=F,fig.cap="Maximum attainable mean bias for a given first stage sample size: Left column shows data for absolute bias, right column for relative bias (in units of the standard error). First row gives maximum bias, second the difference of means, third the standard deviation and fourth the variance of the mean where the maximum is attained.",fig.width=4,fig.height=6}
+
+## gridsim <- within(gridsim,{relbias <- mean.bias/(delta+sqrt(vm))
+##                            uc.relbias <- uc.mean.bias/(delta+sqrt(vm))})
+gridsim <- within(gridsim,{relbias <- mean.bias/(delta)
+                           uc.relbias <- uc.mean.bias/(delta)})
+
+
+ns <- sort(unique(gridsim$n1))
+idx <- seq(.5,2,length.out=length(ns))
+
+max.bias <- ddply(gridsim,"n1",summarise,
+                  max.mean.bias= -min(mean.bias),
+                  max.mean.bias.delta = delta[which.min(mean.bias)],
+                  max.mean.bias.sigma = sigma[which.min(mean.bias)],
+                  ## max.mean.bias.vm = vm[which.min(mean.bias)],
+                  max.rel.mean.bias= -min(relbias),
+                  max.rel.mean.bias.delta = delta[which.min(relbias)],
+                  max.rel.mean.bias.sigma = sigma[which.min(relbias)],
+                  ## max.rel.mean.bias.vm = vm[which.min(relbias)],
+                  uc.max.mean.bias= -min(uc.mean.bias),
+                  uc.max.mean.bias.delta = delta[which.min(uc.mean.bias)],
+                  uc.max.mean.bias.sigma = sigma[which.min(uc.mean.bias)],
+                  ## uc.max.mean.bias.vm = vm[which.min(uc.mean.bias)],
+                  uc.max.rel.mean.bias= -min(uc.relbias),
+                  uc.max.rel.mean.bias.delta = delta[which.min(uc.relbias)],
+                  uc.max.rel.mean.bias.sigma = sigma[which.min(uc.relbias)]
+                  ## uc.max.rel.mean.bias.vm = vm[which.min(uc.relbias)]
+                  ## max.variance.bias= -min(variance.bias),
+                  ## max.variance.bias.delta = delta[which.min(variance.bias)],
+                  ## max.variance.bias.sigma = sigma[which.min(variance.bias)],
+                  ## max.variance.bias.vm = vm[which.min(variance.bias)],
+                  )
+
+max.bias <- within(max.bias,{max.mean.bias <- max.mean.bias/max.mean.bias.delta
+                             uc.max.mean.bias <- uc.max.mean.bias/uc.max.mean.bias.delta})
+df <- melt(max.bias,id='n1')
+df <- within(df,scale <- c("absolute","relative")[grepl("rel",variable)+1])
+df <- within(df,method <- factor((2:1)[grepl("uc",variable)+1],labels=c("unadjusted","adjusted")))
+df <- within(df,variable <- sub("rel\\.","",variable))
+df <- within(df,variable <- sub("uc\\.","",variable))
+df <- within(df,variable <- factor(variable,labels=c('maximum mean bias',expression(delta),expression(sigma))))
+
+dfa <- df[df$scale=="absolute",]#"relative",]#
+scalehelper <- data.frame(n1=rep(-10,3),variable=factor(1:3,label=c("maximum mean bias",expression(delta),expression(sigma))),value=rep(0,3),scale=rep("absolute",3),method=rep("adjusted",3))
+dfa <- rbind(dfa,scalehelper)
+                                                                                      
+mplot <- ggplot(dfa)+
+    geom_line(aes(2*n1,100*value),subset=.(variable=="maximum mean bias")) +
+    geom_smooth(aes(2*n1,value),subset=.(variable!="maximum mean bias")) + geom_point(aes(2*n1,value),subset=.(variable!="maximum mean bias"),size=1) +
+    facet_grid(variable~method,scale='free_y',labeller=lverbose) +xlab(expression(paste("Total First Stage Sample Size ",2*n[1])))+ylab('')+theme_bw()+xlim(c(2,150))
+print(mplot)
+
+## relativer bias (constallation die den bias,bzw,type I error, maximiert)
+```
+
+### Maximum bias of the variance estimate
+
+```{r maxVarbias,echo=F,fig.width=4,fig.height=5}
+max.varbias <- ddply(gridsim,"n1",summarise,
+                  max.variance.bias= -min(variance.bias),
+                  max.variance.bias.delta = delta[which.min(variance.bias)],
+                  max.variance.bias.sigma = sigma[which.min(variance.bias)],
+                  uc.max.variance.bias= -min(uc.variance.bias),
+                  uc.max.variance.bias.delta = delta[which.min(uc.variance.bias)],
+                  uc.max.variance.bias.sigma = sigma[which.min(uc.variance.bias)]
+                  )
+
+
+df <- melt(max.varbias,id='n1')
+df <- within(df,scale <- c("absolute","relative")[grepl("rel",variable)+1])
+df <- within(df,method <- factor((2:1)[grepl("uc",variable)+1],labels=c("unadjusted","adjusted")))
+df <- within(df,variable <- sub("rel\\.","",variable))
+df <- within(df,variable <- sub("uc\\.","",variable))
+df <- within(df,variable <- factor(variable,labels=c('maximum variance bias',expression(delta),expression(sigma))))
+dfa <- df[df$scale=="absolute",]
+scalehelper <- data.frame(n1=rep(-10,3),variable=factor(1:3,label=c("maximum variance bias",expression(delta),expression(sigma))),value=rep(0,3),scale=rep("absolute",3),method=rep("adjusted",3))
+dfa <- rbind(dfa,scalehelper)
+vplot <- ggplot(dfa,aes(2*n1,value))+
+    geom_line(subset=.(variable=="maximum variance bias")) +
+    geom_smooth(subset=.(variable==levels(variable)[3])) + geom_point(subset=.(variable!="maximum variance bias"),size=1) +
+    facet_grid(variable~method,scale='free_y',labeller=lverbose) +xlab(expression(paste("Total First Stage Sample Size ",2*n[1])))+ylab('Value')+theme_bw()+xlim(c(2,150))
+print(vplot)
+
+
+
+```
+
+### Maximum difference between nominal and actual coverage probability
+
+```{r maxCoverage,echo=F,fig.width=4,fig.height=5}
+max.coverage <- ddply(gridsim,"n1",summarise,
+                  max.coverage = max(total.prob)-.05,
+                  max.coverage.bias.delta = delta[which.max(total.prob)],
+                  max.coverage.bias.sigma = sigma[which.max(total.prob)],
+                  uc.max.coverage= max(uc.total.prob)-.05,
+                  uc.max.coverage.bias.delta = delta[which.max(uc.total.prob)],
+                  uc.max.coverage.bias.sigma = sigma[which.max(uc.total.prob)]
+                  )
+
+
+df <- melt(max.coverage,id='n1')
+df <- within(df,scale <- c("absolute","relative")[grepl("rel",variable)+1])
+df <- within(df,method <- factor((2:1)[grepl("uc",variable)+1],labels=c("unadjusted","adjusted")))
+df <- within(df,variable <- sub("rel\\.","",variable))
+df <- within(df,variable <- sub("uc\\.","",variable))
+df <- within(df,variable <- factor(variable,labels=c('noncoverage',expression(delta),expression(sigma))))
+dfa <- df[df$scale=="absolute",]
+scalehelper <- data.frame(n1=rep(-10,3),variable=factor(1:3,label=c("noncoverage",expression(delta),expression(sigma))),value=rep(0,3),scale=rep("absolute",3),method=rep("adjusted",3))
+dfa <- rbind(dfa,scalehelper)
+cplot <- ggplot(dfa)+
+    geom_line(aes(2*n1,100*value),subset=.(variable=="noncoverage")) +
+    geom_smooth(aes(2*n1,value),subset=.(variable!="noncoverage")) + geom_point(aes(2*n1,value),subset=.(variable!="noncoverage"),size=1) +
+    facet_grid(variable~method,scale='free_y',labeller=lverbose(string='Actual - Nominal [%]')) +xlab(expression(paste("Total First Stage Sample Size ",2*n[1])))+ylab('Value')+theme_bw()+xlim(c(2,150))
+print(cplot)
+    
+
+```
+
+
+
+
+```{r export figures,eval=F,echo=F,results='hide',include=F}
+cairo_ps('maxbias.eps',height=5,width=4)
+print(mplot)
+dev.off()
+
+cairo_ps('maxcbias.eps',height=5,width=4)
+print(cplot)
+dev.off()
+
+cairo_ps('maxvbias.eps',height=5,width=4)
+print(vplot)
+dev.off()
+
+```
+
+# Case Study
+
+## Introduction
+
+This vignette reruns the simulations shown in the case study of our
+paper. Running the simulations for the case study requires some
+additional packages. Most notably \texttt{bt88.03.704} which can be
+installed from github using \texttt{install\_github} from package
+\texttt{devtools}.
+
+
+The next code chunk runs the simulations. This may take several of
+hours to a couple of days depending on the machine you run them
+on. Here with 32 cores and 32GB ram it took about 2 hours. 
+
+We first set up the parameters from \cite{Kieser03} and then run the
+simulation.
+
+```{r parameter setting,echo=F}
+
+alpha = 0.025
+beta = 0.2
+d = 5.5
+s = 8
+
+n1 <- 15
+s1o <- 6
+s1a <- 5.3
+
+```
+
+To rerun the simulation the following code chunk needs to be
+reconfigured for evaluation.
+
+```{r run_case_study,eval=F}
+set.seed(659376)
+G <- expand.grid(delta = round(seq(-2*d, 2*d,d/20),2),
+                 sigma = round(seq(1,20,1)),
+                 d=5.5,
+                 s=8,n1=15)
+
+runs=5*10^6
+casesim <- t(simplify2array(mclapply(1:nrow(G),
+                                     function(i) {c(G[i,],
+                                                    simVBIA(delta=G[i,]$delta,
+                                                            sigma=G[i,]$sigma,
+                                                            d=G[i,]$d,s=G[i,]$s,
+                                                            n1=G[i,]$n1,
+                                                            cf=1,runs=runs,
+                                                            alpha=.025,
+                                                            beta=.2))})))
+
+runs <- 10^5
+bsim <- do.call(rbind,lapply(1:nrow(G),
+                             function(i) {c(G[i,],
+                                            simMBIA(delta=G[i,]$delta,
+                                                    sigma=G[i,]$sigma,
+                                                    n1=dsim[i,]$n1,
+                                                    runs=runs))}))
+
+#load('fallback.rda')
+bsim <- as.data.frame(apply(bsim,2,unlist),row.names=NA)
+
+pN <- 2*ceiling(zss(s,d,alpha,beta))
+
+gsim <- as.data.frame(t(apply(casesim,1,unlist)))
+
+gsim$var.rbias <- gsim$variance.bias/gsim$sigma^2
+gsim$bound <- lowerBound(gsim$n1,gsim$d)
+gsim$mean.upper.bias <- bsim$m.bias
+gsim$mean.lower.bias <- bsim$m.bias.n
+casesim <- gsim
+casesim$brannath <- .4*sqrt(2)*casesim$sigma/sqrt(casesim$n1)
+
+print(fname <- paste('casesim_',format(Sys.time(),"%y%m%d-%H"),'.Rd',sep=''))
+save(casesim,file=fname)
+
+```
+
+
+
+
+## Case study
+
+
+As an example \cite{Kieser03} present the trial reported in
+\cite{Malsch01}, which is a randomized placebo controlled trial of
+the efficacy of the kava-kava special extract "WS$^{\textregistered}$
+1490" for the treatment of anxiety. The primary endpoint of the study
+was the change in the Hamilton Anxiety Scale (HAMA) between baseline
+and end of treatment. Assuming a mean difference between treatment and
+control of $\delta_0 = `r d`$ and standard deviation of $\sigma_0
+= 8$ (\ie a variance of $\sigma_0^2=64$) results in a sample size of
+$34$ patients per group to provide a power of $80\%$.
+
+```{r maximum var.bias,include=F,echo=F}
+
+variance.bias <- lowerBound(n1,d,alpha,beta)
+
+```
+
+
+
+```{r load data and set variables,include=F,echo=F}
+data('casesim')
+
+
+max.mean.bias <- which.max(casesim$mean.bias)
+uc.max.mean.bias <- which.max(casesim$uc.mean.bias)
+min.mean.bias <- which.min(casesim$mean.bias)
+uc.min.mean.bias <- which.min(casesim$uc.mean.bias)
+
+max.var.bias <- which.min(casesim$variance.bias)
+uc.max.var.bias <- which.min(casesim$uc.variance.bias)
+
+max.nc.upper <- which.max(casesim$upper.prob)
+max.nc.lower <- which.max(casesim$lower.prob)
+max.nc.total <- which.max(casesim$total.prob)
+uc.max.nc.upper <- which.max(casesim$uc.upper.prob)
+uc.max.nc.lower <- which.max(casesim$uc.lower.prob)
+uc.max.nc.total <- which.max(casesim$uc.total.prob)
+
+```
+
+\cite{Kieser03} assume that sample size reassessment based on blinded
+data is performed after $15$ patients per group and consider that the
+interim estimate of the standard deviation is $S_{1,OS} = 6$ and
+adjusting for $\delta_0 = 5.5$ gives $S_{1,OS,\delta_0}=5.3$. The
+corresponding updated sample sizes are then given by 19 and 15
+patients (per group), respectively. In an unrestricted desgin, an
+additional 4 patients per group would have been recruited based on
+$S_{1,OS}$; the trial would have been stopped early based on
+$S_{1,OS,\delta_0}$. 
+
+If the sample size reassessment is based on the unadjusted interim
+variance estimate $S_{1,OS}$, the variance estimate from the completed
+trial will be negatively biased. Theorem \ref{the:bound} gives a lower
+bound for the magnitude of that bias which in this case is
+$`r round(variance.bias,2)`$. We also performed a simulation
+study, similar to that of Section 4 in the paper, where we fix
+$\delta_0=5.5$, $\sigma_0=8$ and $n_1=15$ - but not $S_{1,OS}$,
+$S_{1,OS,\delta_0}$ - and let $\delta$ vary from $-2\delta_0=-11$ to
+$2\delta_0=11$ in steps of $0.05$ and $\sigma$ from $1$ to $20$ in
+steps of $1$. Detailed results are shown in Figure \ref{fig:case}
+where we plot the coverage of the confidence intervals and biases of
+the mean, and the variance estimate. The variance bias gets as low as
+$`r round(casesim[uc.max.var.bias,'uc.variance.bias'],2)`$ if the
+true mean effect is $\delta =
+`r round(casesim[uc.max.var.bias,'delta'],2)`$ and the true
+standard deviation $\sigma =
+`r round(casesim[uc.max.var.bias,'sigma'])`$ (\ie it reaches the
+theoretical boundary within simulation error). For smaller values of
+the true standard deviation the bias is smaller in magnitude. The mean
+bias goes up to
+$`r round(casesim[uc.max.mean.bias,'uc.mean.bias'],2)`$ for
+negative values of the true effect size and as low as
+$`r round(casesim[uc.min.mean.bias,'uc.mean.bias'],2)`$ for
+positive values of the true effect size. The absolute bias reaches its
+maximum for a true mean differences of $\delta = \pm
+`r round(casesim[uc.min.mean.bias,'delta'],2)`$) and standard
+deviation of $\sigma =
+`r round(casesim[uc.min.mean.bias,'sigma'])`$). The maximum
+inflation of the coverage probabilities of one-sided $97.5\%$ and
+two-sided $95\%$ confidence intervals is
+$`r 100*round(casesim[uc.max.nc.upper,'uc.upper.prob']-.025,3)`$
+and
+$`r 100*round(casesim[uc.max.nc.total,'uc.total.prob']-.05,3)`$
+percentage points, respectively. The actual coverage probabilities are
+smallest for large absolute values of the true mean difference and
+standard deviations of around $5$.
+    
+If the sample size reassessment is based on the adjusted variance
+estimate, the absolute bias of the variance and mean estimate will be
+even larger taking values up to $`r abs(round(casesim[max.var.bias,'variance.bias'],2))`$ for the
+variance and up to $`r round(casesim[max.mean.bias,'mean.bias'],2)`$ for the mean,
+respectively. The inflation of the coverage probabilities goes up to
+$`r 100*round(casesim[max.nc.upper,'upper.prob']-.025,3)`$
+percentage points for the
+one-sided confidence intervals and
+$`r 100*round(casesim[max.nc.total,'total.prob']-.05,3)`$
+percentage points for the
+two-sided intervals. 
+
+
+
+```{r labeller case study,eval=T,echo=F,include=F}
+lverbose = function(variable,value,...){
+    if(variable == "sigma"){
+        sapply(value,function(val) substitute(paste(sigma," = ",foo,sep=""),list(foo=val)))#label_parsed(variable,label_both(variable,value))
+    } else {
+        label_value(variable,value)
+    }
+}
+```
+
+
+
+```{r generateplot,echo=F,fig.width=7,fig.height=5}
+tcasesim <- casesim
+tcasesim <- subset(tcasesim, sigma %in% c(1,5,10,15,20)) 
+
+df <- rbind(tcasesim,tcasesim,tcasesim)
+df$variable <- rep(c("Actual - Nominal","Bias Of The Mean","Bias Of The Variance"),each=nrow(tcasesim))
+
+mplot <- ggplot(df) + facet_grid(variable~sigma,scales='free_y',labeller=lverbose) +
+    geom_path(aes(delta,uc.mean.bias),subset=.(variable  == "Bias Of The Mean")) +
+    geom_path(aes(delta,mean.bias),lty=2,subset=.(variable  == "Bias Of The Mean")) +
+    geom_path(aes(delta,mean.upper.bias),lty=3,col='red',subset=.(variable  == "Bias Of The Mean"))+
+    geom_path(aes(delta,-mean.upper.bias),lty=3,col='red',subset=.(variable  == "Bias Of The Mean"))+
+    geom_path(aes(delta,brannath),lty=3,col='darkgreen',subset=.(variable  == "Bias Of The Mean" & brannath < 1.6))+
+    geom_path(aes(delta,-brannath),lty=3,col='darkgreen',subset=.(variable  == "Bias Of The Mean" & brannath < 1.6))+
+    geom_path(aes(delta,uc.variance.bias),subset=.(variable == "Bias Of The Variance")) +
+    geom_path(aes(delta,variance.bias),lty=2,subset=.(variable == "Bias Of The Variance")) +
+    geom_path(aes(delta,bound),col='red',subset=.(variable == "Bias Of The Variance")) +
+    geom_path(aes(x=delta,y=.025-uc.upper.prob),lty=2,subset=.(variable=="Actual - Nominal")) +
+    geom_line(aes(x=delta,y=0),colour='gray',subset=.(variable=="Actual - Nominal")) +
+    geom_path(aes(x=delta,y=.025-uc.lower.prob),lty=3,subset=.(variable=="Actual - Nominal")) +
+        geom_path(aes(x=delta,y=.05-uc.total.prob),subset=.(variable=="Actual - Nominal")) +
+    geom_blank(aes(x=-5,y=-0.02),subset=.(variable=="Actual - Nominal")) +
+    geom_blank(aes(x=-5,y=0.01),subset=.(variable=="Actual - Nominal")) + ylab('')+xlab(expression(delta))+theme_bw()
+
+print(mplot)
+
+```
+
+
+```{r save case study plot,eval=F,echo=F}
+## this chunk produces the file that goes into the paper
+
+cairo_ps('case.eps',height=5)
+print(mplot)
+dev.off()
+
+```
+
+
