@@ -58,34 +58,7 @@ zsd <- function(n1,d,v = 1/2,alpha,beta){
 #' @param n2min minimum secondstage sample size
 #' @param fulldata return full data 
 #' @param cf correction term added to the sample size rule
-#' @return If fulldata is \code{FALSE} simVBIA returns a list with
-#' the following items, summarizing the simulation results for
-#' designs with sample size reassessment based on the adjusted
-#' interim variance estimates:
-#' \item{lower.prob}{Coverage probability of the lower confidence bound}
-#' \item{upper.prob}{Coverage probability of the upper confidence bound}
-#' \item{total.prob}{Coverage probability of the two sided confidence interval}
-#' \item{mean.bias}{Bias of the mean estimate}
-#' \item{variance.bias}{Bias of the variance estimate}
-#' \item{ev}{Variance of the mean estimate as estimated from the adaptive trian}
-#' \item{exv}{Variance of the mean estimate of a fixed sample trial with corresponding sample size}
-#' \item{vm}{Variance of the mean estimate in the monte carlo sample}
-#' \item{root.mse}{Root mean squared error of the effect estimate}
-#' \item{mean.m1}{Mean second stage sample size}
-#' \item{low.m1}{Lower 10 percen quantile of second stage sample sizes}
-#' \item{n10}{Probability that the second stage sample size is zero}
-#' as well as results for designs with sample size reassessment
-#' based on unadjusted interim estimates:
-#' \item{uc.mean.bias}{Bias of the mean estimate}
-#' \item{uc.variance.bias}{Bias of the variance estimate}
-#' \item{uc.ev}{Variance of the mean estimate as estimated from the adaptive trian}
-#' \item{uc.exv}{Variance of the mean estimate of a fixed sample trial with corresponding sample size}
-#' \item{uc.vm}{Variance of the mean estimate in the monte carlo sample}
-#' \item{uc.root.mse}{Root mean squared error of the effect estimate}
-#' \item{uc.mean.m1}{Mean second stage sample size}
-#' \item{uc.low.m1}{Lower 10 percen quantile of second stage sample sizes}
-#' \item{uc.N10}{Probability that the second stage sample size is zero}
-#' \item{tn1}{mean(n1)}
+#' @template simvbia
 #' @examples
 #' simVBIA(.5,1,1,n1=10,n2min=2,runs=1000)
 #' @export
@@ -233,6 +206,7 @@ simVBIA <- function(delta, # true effect size
                            "n2"=n2))
   return(err)
 }
+
 ##' Combine the fulldata results of two simulation runs 
 ##'
 ##' @title Combine simulation results
@@ -254,8 +228,8 @@ combine_simVBIA <- function(...){
 ##' 
 ##' @title Summarize simulation results
 ##' @param sim result of \code{simVBIA} with option fulldata set to \code{TRUE}
-##' @return
-##' @template vbia_results
+##' @return summary statistics over simulation results
+##' @template simvbia
 ##' @author float
 ##' @export
 summary_simVBIA <- function(simresults){
@@ -436,16 +410,18 @@ NULL
 #'
 #' This package provides all code used to perform and summarize the
 #' simulation study shown in our paper "Estimation after blinded
-#' interim analysis". The code for the general simulations is provided
-#' in \code{vignette{'SimulateBias'}}, the corresponding simulation
-#' results are saved in \code{data{gridsim}}; the code for the case
-#' study simulation is in \code{vignette{'CaseStudy'}} teh
-#' corresponding simulation results are saved in \code{data{casesim}}.
-#' Rebuilding the vignettes will use the saved results to redraw all
-#' the graphics from the paper. In order to rerun the simulations the
-#' corresponding code chunks need to be configured for
-#' evaluation. NOTE: although this package should run on Windows it
-#' has been tested and optimized under Linux.
+#' interim analysis". The code for all simulations is provided in
+#' \code{vignette{'simulations'}}, simulation results for coverage
+#' probabilities and biases of estimates are saved in
+#' \code{data{gridsim}}; the results from the case study simulation
+#' are saved in \code{data{casesim}}; the results for maximizing the
+#' bias of the effect size and variance estimate as well as the
+#' inflation of the non-coverage probability are saved in
+#' \code{data{maxsim}}. Rebuilding the vignette will use the saved
+#' results to redraw all the graphics from the paper. In order to
+#' rerun the simulations the corresponding code chunks need to be
+#' configured for evaluation. NOTE: although this package should run
+#' on Windows it has been tested and optimized under Linux.
 #' 
 #'
 #' @name blindConfidence-package

@@ -11,16 +11,18 @@ Simulation of estimation after blinded interim analysis
 \details{
 This package provides all code used to perform and summarize the
 simulation study shown in our paper "Estimation after blinded
-interim analysis". The code for the general simulations is provided
-in \code{vignette{'SimulateBias'}}, the corresponding simulation
-results are saved in \code{data{gridsim}}; the code for the case
-study simulation is in \code{vignette{'CaseStudy'}} teh
-corresponding simulation results are saved in \code{data{casesim}}.
-Rebuilding the vignettes will use the saved results to redraw all
-the graphics from the paper. In order to rerun the simulations the
-corresponding code chunks need to be configured for
-evaluation. NOTE: although this package should run on Windows it
-has been tested and optimized under Linux.
+interim analysis". The code for all simulations is provided in
+\code{vignette{'simulations'}}, simulation results for coverage
+probabilities and biases of estimates are saved in
+\code{data{gridsim}}; the results from the case study simulation
+are saved in \code{data{casesim}}; the results for maximizing the
+bias of the effect size and variance estimate as well as the
+inflation of the non-coverage probability are saved in
+\code{data{maxsim}}. Rebuilding the vignette will use the saved
+results to redraw all the graphics from the paper. In order to
+rerun the simulations the corresponding code chunks need to be
+configured for evaluation. NOTE: although this package should run
+on Windows it has been tested and optimized under Linux.
 }
 \author{
 Florian Klinglmueller
