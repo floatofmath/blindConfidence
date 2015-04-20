@@ -19,11 +19,11 @@ Rmarkdown file using *knitr* will recompute all figures using stored
 simulation results. To rerun the simulations the corresponding R
 chunks can be reconfigured so that they will be evaluated on
 compilation. Note that this may take a very long time and require
-considerable amount of main memory - publication results were computed
-on a simulation server providing 40 processor cores and 64 GB of shared
-memory. Note that the code has been optimized to run on Linux, so while
-the package should work fine on Windows in theory, it has not been
-tested.
+considerable amount of main memory. Computation of the publication
+results took about 6 hours on a simulation server using 10 processor
+cores and (more importantly) 64 GB of shared memory. Note that the
+code has been optimized to run on Linux, so while the package should
+work fine on Windows in theory, it has not been tested.
 
 # Coverage probabilities and bias of the mean and variance estimates
 
@@ -68,7 +68,7 @@ lverbose = function(variable,value){
 ```{r parameter grid}
 ## The next chunk generates the matrix of parameters for which
 ## simulations are run.
-G <- expand.grid(delta=round(seq(-2,2,.1),1),
+G <- expand.grid(delta=round(seq(-4,4,.1),1),
                  sigma=round(seq(.5,2,.5),2),
                  d = 1,
                  s = round(seq(.5,2,.5),2))
