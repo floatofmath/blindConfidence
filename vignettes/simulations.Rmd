@@ -92,7 +92,7 @@ We assume that the pre-planned sample size of the trial was planned to
 ## them it has to be reconfigured for evaluation. Note that running the
 ## simulations may take quite long.
 set.seed(50014056)
-runs <- 10^7
+runs <- 5*10^7
 gridsim <- t(simplify2array(mclapply(1:nrow(G),
                                      function(i) {c(G[i,],
                                                     simVBIA(delta=G[i,]$delta,
