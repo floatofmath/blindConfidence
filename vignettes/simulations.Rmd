@@ -422,7 +422,7 @@ lverbose = function(variable,value,string=NULL){
           }
     }
     if(is.null(string)){
-        string <- 'Absolute bias'
+        string <- 'Absolute Bias'
         return(f(variable,value))
     } else {
           return(f)
@@ -675,7 +675,7 @@ bsim <- do.call(rbind,lapply(1:nrow(G),
                              function(i) {c(G[i,],
                                             simMBIA(delta=G[i,]$delta,
                                                     sigma=G[i,]$sigma,
-                                                    n1=dsim[i,]$n1,
+                                                    n1=G[i,]$n1,
                                                     runs=runs))}))
 
 #load('fallback.rda')
