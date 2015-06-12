@@ -281,7 +281,19 @@ tupd.vm.bias <- ggplot(gridsim,mapping=aes(x=delta,y=vm)) +geom_line(lty=1) +
     geom_path(aes(y=ev),lty=2) + geom_path(aes(y=exv),lty=3) +
     facet_grid(s~sigma,labeller=lverbose) + theme_bw() + geom_blank(aes(x=delta,y=ylow)) +
     xlab(expression(delta)) + ylab('Variance of the mean estimate')
+
+tupd.why.infl <- ggplot(gridsim,mapping=aes(x=delta,y=vm-ev)) +geom_line(lty=2) +
+    geom_path(aes(y=mean.bias),lty=3) +     geom_path(aes(y=(.025-upper.prob)),lty=1) + geom_path(aes(y=(.025-lower.prob)),lty=1,col='green') + geom_path(aes(y=(.05-total.prob)),col='red',lty=1) +  geom_hline(v=0,col='grey') +
+    facet_grid(s~sigma,labeller=lverbose) + theme_bw() + geom_blank(aes(x=delta,y=ylow)) +
+    xlab(expression(delta)) + ylab('Variance of the mean estimate')
+
 print(tupd.vm.bias)
+## print(tupd.why.infl)
+
+## pdf('/tmp/why_inflation.pdf')
+## print(tupd.why.infl)
+## dev.off()
+
 ```
 
 ### Unadjusted interim variance estimate
@@ -348,7 +360,7 @@ G$s <- zsd(G$n1,G$d,.5,.025,.2)
 
 ```{r run simulations,eval=FALSE,echo=FALSE}
 set.seed(50014056)
-runs <- 5*10^2
+runs <- 5*10^7
 system.time(gridsim <- t(simplify2array(mclapply(1:nrow(G),
                                                  function(i) {c(G[i,],
                                                                 simVBIA(delta=G[i,]$delta,
@@ -405,7 +417,6 @@ data(maxsim)
 
 full.sim <- gridsim
 gridsim$ylow <- 0
-
 
 ```
 
@@ -465,18 +476,16 @@ max.bias <- ddply(gridsim,"n1",summarise,
                   ## max.variance.bias.vm = vm[which.min(variance.bias)],
                   )
 
+```
 
-## max.bias <- within(max.bias,{max.mean.bias <- max.mean.bias/max.mean.bias.delta
-##                              uc.max.mean.bias <- uc.max.mean.bias/uc.max.mean.bias.delta})
-
+```{r reshapeMean,eval=F}
+## reshape and resim
 max.bias.resh <- rbindlist(list(within(max.bias[,1:4],{ variable  <-  "abs.mean"}),
                        ## within(max.bias[,c(1,5:7)],{ variable  <- "rel.mean"})
                        within(max.bias[,c(1,8:10)],{ variable  <- "uc.abs.mean"})),use.names=FALSE)
                        ## within(max.bias[,c(1,11:13)],{ variable  <- "uc.rel.mean"})),use.names=FALSE)
              
-      
-             
-                        
+runs <- 10^2
 system.time(resim <- mclapply(1:nrow(max.bias.resh),
                               function(i) {c(max.bias.resh[i,],
                                              simVBIA(delta=max.bias.resh[i,]$max.mean.bias.delta,
@@ -492,22 +501,15 @@ resim <- rbindlist(resim)
 resim[,relbias := mean.bias/(max.mean.bias.delta)]
 
 
-max.bias2 <- ddply(gridsim,"n1",data.frame,
+max.bias2 <- ddply(resim,"n1",transform,
                   max.mean.bias= mean.bias,
-                  max.mean.bias.delta = delta,
-                  max.mean.bias.sigma = sigma,
                   ## max.mean.bias.vm = vm[which.min(mean.bias)],
-                  max.rel.mean.bias= relbias,
-                  max.rel.mean.bias.delta = delta, 
-                  max.rel.mean.bias.sigma = sigma,
+                  max.rel.mean.bias= mean.bias/max.mean.bias.delta,
                   ## max.rel.mean.bias.vm = vm[which.min(relbias)],
                   uc.max.mean.bias= uc.mean.bias,
-                  uc.max.mean.bias.delta = delta,
-                  uc.max.mean.bias.sigma = sigma,
                   ## uc.max.mean.bias.vm = vm[which.min(uc.mean.bias)],
-                  uc.max.rel.mean.bias= uc.relbias,
-                  uc.max.rel.mean.bias.delta = delta, 
-                  uc.max.rel.mean.bias.sigma = sigma,
+                   uc.max.rel.mean.bias= uc.mean.bias/max.mean.bias.delta,
+                   method=c("abs.mean"="unadjusted","uc.abs.mean"="adjusted")[variable]
                   ## uc.max.rel.mean.bias.vm = vm[which.min(uc.relbias)]
                   ## max.variance.bias= -min(variance.bias),
                   ## max.variance.bias.delta = delta[which.min(variance.bias)],
@@ -515,6 +517,7 @@ max.bias2 <- ddply(gridsim,"n1",data.frame,
                   ## max.variance.bias.vm = vm[which.min(variance.bias)],
                   )
 
+max.bias2 <- max.bias2[,c('method','n1','max.mean.bias.delta','max.mean.bias.sigma','max.mean.bias','max.rel.mean.bias','uc.max.mean.bias','uc.max.rel.mean.bias')]
 
 ```
 
@@ -522,7 +525,13 @@ max.bias2 <- ddply(gridsim,"n1",data.frame,
 ```{r maxbias,echo=F,fig.cap="Maximum attainable mean bias for a given first stage sample size: Left column shows data for absolute bias, right column for relative bias (in units of the standard error). First row gives maximum bias, second the difference of means, third the standard deviation and fourth the variance of the mean where the maximum is attained.",fig.width=4,fig.height=6}
 
 
+df <- melt(max.bias2,id=c('n1','method'))
+df <- within(df,scale <- c("absolute","relative")[grepl("rel",variable)+1])
+df <- within(df,variable <- sub("rel\\.","",variable))
+df <- within(df,variable <- sub("uc\\.","",variable))
+df <- df[df$variable %in% c('max.mean.bias','max.mean.bias.delta','max.mean.bias.sigma'),]
 
+df <- within(df,variable <- factor(variable,labels=c('maximum mean bias',expression(delta),expression(sigma))))
 
 dfa <- df[df$scale=="absolute",]#"relative",]#
 scalehelper <- data.frame(n1=rep(-10,3),variable=factor(1:3,label=c("maximum mean bias",expression(delta),expression(sigma))),value=rep(0,3),scale=rep("absolute",3),method=rep("adjusted",3))
@@ -549,16 +558,56 @@ max.varbias <- ddply(gridsim,"n1",summarise,
                   uc.max.variance.bias.sigma = sigma[which.min(uc.variance.bias)]
                   )
 
+max.varbias.resh <- rbindlist(list(within(max.varbias[,1:4],{ variable  <-  "abs.variance"}),
+                       within(max.varbias[,c(1,5:7)],{ variable  <- "uc.abs.variance"})),use.names=FALSE)
 
-df <- melt(max.varbias,id='n1')
+             
+runs <- 10^2
+system.time(resim <- mclapply(1:nrow(max.varbias.resh),
+                              function(i) {c(max.varbias.resh[i,],
+                                             simVBIA(delta=max.varbias.resh[i,]$max.variance.bias.delta,
+                                                     sigma=max.varbias.resh[i,]$max.variance.bias.sigma,
+                                                     d=1,
+                                                     n1=max.varbias.resh[i,]$n1,
+                                                     cf=1,
+                                                     runs=runs,
+                                                     alpha=.025,
+                                                     beta=.2))}))
+
+resim <- rbindlist(resim)
+resim[,relbias := variance.bias/(max.variance.bias.delta)]
+
+
+max.varbias2 <- ddply(resim,"n1",transform,
+                  max.variance.bias= variance.bias,
+                  ## max.variance.bias.vm = vm[which.min(variance.bias)],
+                  max.rel.variance.bias= variance.bias/max.variance.bias.delta,
+                  ## max.rel.variance.bias.vm = vm[which.min(relbias)],
+                  uc.max.variance.bias= uc.variance.bias,
+                  ## uc.max.variance.bias.vm = vm[which.min(uc.variance.bias)],
+                   uc.max.rel.variance.bias= uc.variance.bias/max.variance.bias.delta,
+                   method=c("abs.variance"="unadjusted","uc.abs.variance"="adjusted")[variable]
+                  ## uc.max.rel.variance.bias.vm = vm[which.min(uc.relbias)]
+                  ## max.variance.bias= -min(variance.bias),
+                  ## max.variance.bias.delta = delta[which.min(variance.bias)],
+                  ## max.variance.bias.sigma = sigma[which.min(variance.bias)],
+                  ## max.variance.bias.vm = vm[which.min(variance.bias)],
+                  )
+
+max.varbias2 <- max.varbias2[,c('method','n1','max.variance.bias.delta','max.variance.bias.sigma','max.variance.bias','max.rel.variance.bias','uc.max.variance.bias','uc.max.rel.variance.bias')]
+
+df <- melt(max.varbias2,id=c('n1','method'))
 df <- within(df,scale <- c("absolute","relative")[grepl("rel",variable)+1])
-df <- within(df,method <- factor((2:1)[grepl("uc",variable)+1],labels=c("unadjusted","adjusted")))
 df <- within(df,variable <- sub("rel\\.","",variable))
 df <- within(df,variable <- sub("uc\\.","",variable))
+df <- df[df$variable %in% c('max.variance.bias','max.variance.bias.delta','max.variance.bias.sigma'),]
+
 df <- within(df,variable <- factor(variable,labels=c('maximum variance bias',expression(delta),expression(sigma))))
-dfa <- df[df$scale=="absolute",]
+
+dfa <- df[df$scale=="absolute",]#"relative",]#
 scalehelper <- data.frame(n1=rep(-10,3),variable=factor(1:3,label=c("maximum variance bias",expression(delta),expression(sigma))),value=rep(0,3),scale=rep("absolute",3),method=rep("adjusted",3))
 dfa <- rbind(dfa,scalehelper)
+
 vplot <- ggplot(dfa,aes(n1,value))+
     geom_line(subset=.(variable=="maximum variance bias")) +
     geom_smooth(subset=.(variable==levels(variable)[3])) + geom_point(subset=.(variable!="maximum variance bias"),size=1) + geom_smooth(subset=.(variable==levels(variable)[2])) +
@@ -581,16 +630,61 @@ max.coverage <- ddply(gridsim,"n1",summarise,
                   uc.max.coverage.bias.sigma = sigma[which.max(uc.total.prob)]
                   )
 
+####################3
+## TODO add one sided coverage
+## Fix below
+######################
 
-df <- melt(max.coverage,id='n1')
+max.coverage.resh <- rbindlist(list(within(max.coverage[,1:4],{ variable  <-  "abs.variance"}),
+                       within(max.coverage[,c(1,5:7)],{ variable  <- "uc.abs.variance"})),use.names=FALSE)
+
+             
+runs <- 10^2
+system.time(resim <- mclapply(1:nrow(max.coverage.resh),
+                              function(i) {c(max.coverage.resh[i,],
+                                             simVBIA(delta=max.coverage.resh[i,]$max.variance.bias.delta,
+                                                     sigma=max.coverage.resh[i,]$max.variance.bias.sigma,
+                                                     d=1,
+                                                     n1=max.coverage.resh[i,]$n1,
+                                                     cf=1,
+                                                     runs=runs,
+                                                     alpha=.025,
+                                                     beta=.2))}))
+
+resim <- rbindlist(resim)
+resim[,relbias := variance.bias/(max.variance.bias.delta)]
+
+
+max.coverage2 <- ddply(resim,"n1",transform,
+                  max.variance.bias= variance.bias,
+                  ## max.variance.bias.vm = vm[which.min(variance.bias)],
+                  max.rel.variance.bias= variance.bias/max.variance.bias.delta,
+                  ## max.rel.variance.bias.vm = vm[which.min(relbias)],
+                  uc.max.variance.bias= uc.variance.bias,
+                  ## uc.max.variance.bias.vm = vm[which.min(uc.variance.bias)],
+                   uc.max.rel.variance.bias= uc.variance.bias/max.variance.bias.delta,
+                   method=c("abs.variance"="unadjusted","uc.abs.variance"="adjusted")[variable]
+                  ## uc.max.rel.variance.bias.vm = vm[which.min(uc.relbias)]
+                  ## max.variance.bias= -min(variance.bias),
+                  ## max.variance.bias.delta = delta[which.min(variance.bias)],
+                  ## max.variance.bias.sigma = sigma[which.min(variance.bias)],
+                  ## max.variance.bias.vm = vm[which.min(variance.bias)],
+                  )
+
+max.coverage2 <- max.coverage2[,c('method','n1','max.variance.bias.delta','max.variance.bias.sigma','max.variance.bias','max.rel.variance.bias','uc.max.variance.bias','uc.max.rel.variance.bias')]
+
+df <- melt(max.coverage2,id=c('n1','method'))
 df <- within(df,scale <- c("absolute","relative")[grepl("rel",variable)+1])
-df <- within(df,method <- factor((2:1)[grepl("uc",variable)+1],labels=c("unadjusted","adjusted")))
 df <- within(df,variable <- sub("rel\\.","",variable))
 df <- within(df,variable <- sub("uc\\.","",variable))
-df <- within(df,variable <- factor(variable,labels=c('noncoverage',expression(delta),expression(sigma))))
-dfa <- df[df$scale=="absolute",]
-scalehelper <- data.frame(n1=rep(-10,3),variable=factor(1:3,label=c("noncoverage",expression(delta),expression(sigma))),value=rep(0,3),scale=rep("absolute",3),method=rep("adjusted",3))
+df <- df[df$variable %in% c('max.variance.bias','max.variance.bias.delta','max.variance.bias.sigma'),]
+
+df <- within(df,variable <- factor(variable,labels=c('maximum variance bias',expression(delta),expression(sigma))))
+
+dfa <- df[df$scale=="absolute",]#"relative",]#
+scalehelper <- data.frame(n1=rep(-10,3),variable=factor(1:3,label=c("maximum variance bias",expression(delta),expression(sigma))),value=rep(0,3),scale=rep("absolute",3),method=rep("adjusted",3))
 dfa <- rbind(dfa,scalehelper)
+
 cplot <- ggplot(dfa)+
     geom_line(aes(n1,100*value),subset=.(variable=="noncoverage")) +
     geom_smooth(aes(n1,value),subset=.(variable!="noncoverage")) + geom_point(aes(n1,value),subset=.(variable!="noncoverage"),size=1) +
