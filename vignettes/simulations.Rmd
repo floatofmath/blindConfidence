@@ -360,26 +360,26 @@ G$s <- zsd(G$n1,G$d,.5,.025,.2)
 
 ```{r run simulations,eval=FALSE,echo=FALSE}
 set.seed(50014056)
-runs <- 5*10^7
-system.time(gridsim <- t(simplify2array(mclapply(1:nrow(G),
-                                                 function(i) {c(G[i,],
-                                                                simVBIA(delta=G[i,]$delta,
-                                                                        sigma=G[i,]$sigma,
-                                                                        d=G[i,]$d,
-                                                                        s=G[i,]$s,
-                                                                        cf=1,
-                                                                        runs=runs,
-                                                                        alpha=.025,
-                                                                        beta=.2))}))))
+runs <- 10^6
+system.time(maxsim <- rbindlist(mclapply(1:nrow(G),
+                                         function(i) {c(G[i,],
+                                                        simVBIA(delta=G[i,]$delta,
+                                                                sigma=G[i,]$sigma,
+                                                                d=G[i,]$d,
+                                                                s=G[i,]$s,
+                                                                cf=1,
+                                                                runs=runs,
+                                                                alpha=.025,
+                                                                beta=.2))})))
 
 
-gsim <- as.data.frame(t(apply(gridsim,1,unlist)))
+
 
 ## compute relative bias
-gsim$var.rbias <- gsim$variance.bias/gsim$sigma^2
+maxsim[,var.rbias:= variance.bias/sigma^2]
 
 ## compute the theoretical lower bound for the variance bias
-gsim$bound <- lowerBound(gsim$n1,gsim$d)
+maxsim[,bound:=lowerBound(n1,d)]
 
 ## runs <- 10^2
 ## bsim <- mclapply(1:nrow(gsim),function(i) {c(gsim[i,],
@@ -391,8 +391,8 @@ gsim$bound <- lowerBound(gsim$n1,gsim$d)
 ## bsim <- do.call('cbind',bsim)
 ## bsim <- as.data.frame(apply(bsim,1,unlist),row.names=NA)
 
-gridsim <- gsim
-gridsim$brannath <- .4*sqrt(2)*gridsim$sigma/sqrt(gridsim$n1)
+
+maxsim[,brannath:=.4*sqrt(2)*sigma/sqrt(n1)]
 
 
 
@@ -404,8 +404,8 @@ For each scenario we perform $10^6$ simulation runs.
 
 
 ```{r,eval=FALSE,echo=FALSE}
-fname <- paste('maxsim_',format(Sys.time(),"%y%m%d"),'.Rd',sep='')
-save(gridsim,file=fname)
+fname <- paste('maxsim_',Sys.info()['nodename'],'_',format(Sys.time(),"%y%m%d"),'.Rd',sep='')
+save(maxsim,file=fname)
 ```
 
 
@@ -485,7 +485,7 @@ max.bias.resh <- rbindlist(list(within(max.bias[,1:4],{ variable  <-  "abs.mean"
                        within(max.bias[,c(1,8:10)],{ variable  <- "uc.abs.mean"})),use.names=FALSE)
                        ## within(max.bias[,c(1,11:13)],{ variable  <- "uc.rel.mean"})),use.names=FALSE)
              
-runs <- 10^2
+runs <- 5*10^1
 system.time(resim <- mclapply(1:nrow(max.bias.resh),
                               function(i) {c(max.bias.resh[i,],
                                              simVBIA(delta=max.bias.resh[i,]$max.mean.bias.delta,
@@ -497,9 +497,11 @@ system.time(resim <- mclapply(1:nrow(max.bias.resh),
                                                      alpha=.025,
                                                      beta=.2))}))
 
+```
+
+```{r,echo=F,results='hide'}
 resim <- rbindlist(resim)
 resim[,relbias := mean.bias/(max.mean.bias.delta)]
-
 
 max.bias2 <- ddply(resim,"n1",transform,
                   max.mean.bias= mean.bias,
@@ -753,19 +755,20 @@ G <- expand.grid(delta = round(seq(-2*d, 2*d,d/20),2),
                  d=5.5,
                  s=8,n1=15)
 
-runs=5*10^7
-casesim <- t(simplify2array(mclapply(1:nrow(G),
-                                     function(i) {c(G[i,],
-                                                    simVBIA(delta=G[i,]$delta,
-                                                            sigma=G[i,]$sigma,
-                                                            d=G[i,]$d,s=G[i,]$s,
-                                                            n1=G[i,]$n1,
-                                                            cf=1,runs=runs,
-                                                            alpha=.025,
-                                                            beta=.2))})))
+runs=10^7
+
+casesim <- rbindlist(mclapply(1:nrow(G),
+                              function(i) {c(G[i,],
+                                             simVBIA(delta=G[i,]$delta,
+                                                     sigma=G[i,]$sigma,
+                                                     d=G[i,]$d,s=G[i,]$s,
+                                                     n1=G[i,]$n1,
+                                                     cf=1,runs=runs,
+                                                     alpha=.025,
+                                                     beta=.2))}))
 
 runs <- 10^5
-bsim <- do.call(rbind,lapply(1:nrow(G),
+bsim <- rbindlist(lapply(1:nrow(G),
                              function(i) {c(G[i,],
                                             simMBIA(delta=G[i,]$delta,
                                                     sigma=G[i,]$sigma,
@@ -773,11 +776,11 @@ bsim <- do.call(rbind,lapply(1:nrow(G),
                                                     runs=runs))}))
 
 #load('fallback.rda')
-bsim <- as.data.frame(apply(bsim,2,unlist),row.names=NA)
+#bsim <- as.data.frame(apply(bsim,2,unlist),row.names=NA)
 
 pN <- 2*ceiling(zss(s,d,alpha,beta))
 
-gsim <- as.data.frame(t(apply(casesim,1,unlist)))
+gsim <- casesim
 
 gsim$var.rbias <- gsim$variance.bias/gsim$sigma^2
 gsim$bound <- lowerBound(gsim$n1,gsim$d)
@@ -786,7 +789,7 @@ gsim$mean.lower.bias <- bsim$m.bias.n
 casesim <- gsim
 casesim$brannath <- .4*sqrt(2)*casesim$sigma/sqrt(casesim$n1)
 
-print(fname <- paste('casesim_',format(Sys.time(),"%y%m%d-%H"),'.Rd',sep=''))
+print(fname <- paste('casesim_',Sys.info()['nodename'],'_',format(Sys.time(),"%y%m%d"),'.Rd',sep=''))
 save(casesim,file=fname)
 
 ```
