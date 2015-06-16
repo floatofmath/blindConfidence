@@ -624,28 +624,35 @@ print(vplot)
 
 ```{r maxCoverage,echo=F,fig.width=4,fig.height=5}
 max.coverage <- ddply(gridsim,"n1",summarise,
-                  max.coverage = max(total.prob)-.05,
-                  max.coverage.bias.delta = delta[which.max(total.prob)],
-                  max.coverage.bias.sigma = sigma[which.max(total.prob)],
-                  uc.max.coverage= max(uc.total.prob)-.05,
-                  uc.max.coverage.bias.delta = delta[which.max(uc.total.prob)],
-                  uc.max.coverage.bias.sigma = sigma[which.max(uc.total.prob)]
-                  )
+                      max.coverage = -(max(total.prob)-.05),
+                      max.coverage.bias.delta = delta[which.max(total.prob)],
+                      max.coverage.bias.sigma = sigma[which.max(total.prob)],
+                      uc.max.coverage= -(max(uc.total.prob)-.05),
+                      uc.max.coverage.bias.delta = delta[which.max(uc.total.prob)],
+                      uc.max.coverage.bias.sigma = sigma[which.max(uc.total.prob)],
+                      max.onesided.coverage = -(max(upper.prob)-.025),
+                      max.onesided.coverage.bias.delta = delta[which.max(upper.prob)],
+                      max.onesided.coverage.bias.sigma = sigma[which.max(upper.prob)],
+                      uc.max.onesided.coverage= -(max(uc.upper.prob)-.025),
+                      uc.max.onesided.coverage.bias.delta = delta[which.max(uc.upper.prob)],
+                      uc.max.onesided.coverage.bias.sigma = sigma[which.max(uc.upper.prob)]
+                      )
 
 ####################3
 ## TODO add one sided coverage
 ## Fix below
 ######################
 
-max.coverage.resh <- rbindlist(list(within(max.coverage[,1:4],{ variable  <-  "abs.variance"}),
-                       within(max.coverage[,c(1,5:7)],{ variable  <- "uc.abs.variance"})),use.names=FALSE)
+max.coverage.resh <- rbindlist(list(within(max.coverage[,c(1:4,8:10)],{ variable  <-  "abs.variance"}),
+                                    within(max.coverage[,c(1,5:7,11:13)],{ variable  <- "uc.abs.variance"})),
+                               use.names=FALSE)
 
              
 runs <- 10^2
 system.time(resim <- mclapply(1:nrow(max.coverage.resh),
                               function(i) {c(max.coverage.resh[i,],
-                                             simVBIA(delta=max.coverage.resh[i,]$max.variance.bias.delta,
-                                                     sigma=max.coverage.resh[i,]$max.variance.bias.sigma,
+                                             simVBIA(delta=max.coverage.resh[i,]$max.coverage.bias.delta,
+                                                     sigma=max.coverage.resh[i,]$max.coverage.bias.sigma,
                                                      d=1,
                                                      n1=max.coverage.resh[i,]$n1,
                                                      cf=1,
@@ -654,42 +661,40 @@ system.time(resim <- mclapply(1:nrow(max.coverage.resh),
                                                      beta=.2))}))
 
 resim <- rbindlist(resim)
-resim[,relbias := variance.bias/(max.variance.bias.delta)]
 
 
 max.coverage2 <- ddply(resim,"n1",transform,
-                  max.variance.bias= variance.bias,
-                  ## max.variance.bias.vm = vm[which.min(variance.bias)],
-                  max.rel.variance.bias= variance.bias/max.variance.bias.delta,
-                  ## max.rel.variance.bias.vm = vm[which.min(relbias)],
-                  uc.max.variance.bias= uc.variance.bias,
-                  ## uc.max.variance.bias.vm = vm[which.min(uc.variance.bias)],
-                   uc.max.rel.variance.bias= uc.variance.bias/max.variance.bias.delta,
+                  max.coverage.bias= total.prob-0.05,
+                  ## max.coverage.bias.vm = vm[which.min(coverage.bias)],
+                  ## max.rel.coverage.bias.vm = vm[which.min(relbias)],
+                       uc.max.coverage.bias= uc.total.prob-0.05,
+                       max.onesided.coverage.bias= upper.prob-0.025,
+                       uc.max.onesided.coverage.bias = upper.prob-0.025,
+                  ## uc.max.coverage.bias.vm = vm[which.min(uc.coverage.bias)],
                    method=c("abs.variance"="unadjusted","uc.abs.variance"="adjusted")[variable]
-                  ## uc.max.rel.variance.bias.vm = vm[which.min(uc.relbias)]
-                  ## max.variance.bias= -min(variance.bias),
-                  ## max.variance.bias.delta = delta[which.min(variance.bias)],
-                  ## max.variance.bias.sigma = sigma[which.min(variance.bias)],
-                  ## max.variance.bias.vm = vm[which.min(variance.bias)],
+                  ## uc.max.rel.coverage.bias.vm = vm[which.min(uc.relbias)]
+                  ## max.coverage.bias= -min(coverage.bias),
+                  ## max.coverage.bias.delta = delta[which.min(coverage.bias)],
+                  ## max.coverage.bias.sigma = sigma[which.min(coverage.bias)],
+                  ## max.coverage.bias.vm = vm[which.min(coverage.bias)],
                   )
 
-max.coverage2 <- max.coverage2[,c('method','n1','max.variance.bias.delta','max.variance.bias.sigma','max.variance.bias','max.rel.variance.bias','uc.max.variance.bias','uc.max.rel.variance.bias')]
+max.coverage2 <- max.coverage2[,c('method','n1','max.coverage.bias.delta','max.coverage.bias.sigma','max.coverage.bias','max.onesided.coverage.bias','uc.max.coverage.bias','uc.max.onesided.coverage.bias')]
 
 df <- melt(max.coverage2,id=c('n1','method'))
-df <- within(df,scale <- c("absolute","relative")[grepl("rel",variable)+1])
 df <- within(df,variable <- sub("rel\\.","",variable))
 df <- within(df,variable <- sub("uc\\.","",variable))
-df <- df[df$variable %in% c('max.variance.bias','max.variance.bias.delta','max.variance.bias.sigma'),]
+df <- df[df$variable %in% c('max.coverage.bias','max.coverage.bias.delta','max.coverage.bias.sigma'),]
 
-df <- within(df,variable <- factor(variable,labels=c('maximum variance bias',expression(delta),expression(sigma))))
+df <- within(df,variable <- factor(variable,labels=c('actual - nominal coverage',expression(delta),expression(sigma))))
 
-dfa <- df[df$scale=="absolute",]#"relative",]#
-scalehelper <- data.frame(n1=rep(-10,3),variable=factor(1:3,label=c("maximum variance bias",expression(delta),expression(sigma))),value=rep(0,3),scale=rep("absolute",3),method=rep("adjusted",3))
+dfa <- df
+scalehelper <- data.frame(n1=rep(-10,3),variable=factor(1:3,label=c("actual - nominal coverage",expression(delta),expression(sigma))),value=rep(0,3),scale=rep("absolute",3),method=rep("adjusted",3))
 dfa <- rbind(dfa,scalehelper)
 
 cplot <- ggplot(dfa)+
-    geom_line(aes(n1,100*value),subset=.(variable=="noncoverage")) +
-    geom_smooth(aes(n1,value),subset=.(variable!="noncoverage")) + geom_point(aes(n1,value),subset=.(variable!="noncoverage"),size=1) +
+    geom_line(aes(n1,100*value),subset=.(variable=="actual - nominal coverage")) +
+    geom_smooth(aes(n1,value),subset=.(variable!="actual - nominal coverage")) + geom_point(aes(n1,value),subset=.(variable!="actual - nominal coverage"),size=1) +
     facet_grid(variable~method,scale='free_y',labeller=lverbose(string='Actual - nominal [%]')) +xlab(expression(n[1]))+ylab('Value')+theme_bw()+xlim(c(2,50))
 print(cplot)
     
@@ -700,6 +705,16 @@ print(cplot)
 
 
 ```{r export figures,eval=F,echo=F,results='hide',include=F}
+library(bt88.03.704)
+
+pdf('~/newLife/science/2015/iroes/blinded_florian/blinded-max_short.pdf',width=10,height=4)
+multiplot(mplot,vplot,cplot,cols=3)
+dev.off()
+pdf('~/newLife/science/2015/iroes/blinded_florian/blinded-max_tall.pdf',width=10,height=7)
+multiplot(mplot,vplot,cplot,cols=3)
+dev.off()
+
+
 cairo_ps('maxbias.eps',height=5,width=4)
 print(mplot)
 dev.off()
