@@ -447,13 +447,13 @@ Figure \ref{fig:maxbias} shows the results.
 ```{r resim_mean,eval=F}
 ## gridsim <- within(gridsim,{relbias <- mean.bias/(delta+sqrt(vm))
 ##                            uc.relbias <- uc.mean.bias/(delta+sqrt(vm))})
-gridsim <- within(gridsim,{relbias <- mean.bias/(delta)
+maxsim <- within(maxsim,{relbias <- mean.bias/(delta)
                            uc.relbias <- uc.mean.bias/(delta)})
 
-ns <- sort(unique(gridsim$n1))
+ns <- sort(unique(maxsim$n1))
 idx <- seq(.5,2,length.out=length(ns))
 
-max.bias <- ddply(gridsim,"n1",summarise,
+max.bias <- ddply(maxsim,"n1",summarise,
                   max.mean.bias= -min(mean.bias),
                   max.mean.bias.delta = delta[which.min(mean.bias)],
                   max.mean.bias.sigma = sigma[which.min(mean.bias)],
@@ -485,7 +485,7 @@ max.bias.resh <- rbindlist(list(within(max.bias[,1:4],{ variable  <-  "abs.mean"
                        within(max.bias[,c(1,8:10)],{ variable  <- "uc.abs.mean"})),use.names=FALSE)
                        ## within(max.bias[,c(1,11:13)],{ variable  <- "uc.rel.mean"})),use.names=FALSE)
              
-runs <- 5*10^1
+runs <- 5*10^6
 system.time(resim <- mclapply(1:nrow(max.bias.resh),
                               function(i) {c(max.bias.resh[i,],
                                              simVBIA(delta=max.bias.resh[i,]$max.mean.bias.delta,
@@ -551,7 +551,7 @@ print(mplot)
 ### Maximum bias of the variance estimate
 
 ```{r maxVarbias,echo=F,fig.width=4,fig.height=5}
-max.varbias <- ddply(gridsim,"n1",summarise,
+max.varbias <- ddply(maxsim,"n1",summarise,
                   max.variance.bias= -min(variance.bias),
                   max.variance.bias.delta = delta[which.min(variance.bias)],
                   max.variance.bias.sigma = sigma[which.min(variance.bias)],
@@ -623,7 +623,7 @@ print(vplot)
 ### Maximum difference between nominal and actual coverage probability
 
 ```{r maxCoverage,echo=F,fig.width=4,fig.height=5}
-max.coverage <- ddply(gridsim,"n1",summarise,
+max.coverage <- ddply(maxsim,"n1",summarise,
                       max.coverage = -(max(total.prob)-.05),
                       max.coverage.bias.delta = delta[which.max(total.prob)],
                       max.coverage.bias.sigma = sigma[which.max(total.prob)],
