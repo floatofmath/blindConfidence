@@ -415,8 +415,8 @@ save(maxsim,file=fname)
 ```{r load data maximum bias,echo=F}
 data(maxsim)
 
-full.sim <- gridsim
-gridsim$ylow <- 0
+full.sim <- maxsim
+maxsim$ylow <- 0
 
 ```
 
@@ -500,7 +500,7 @@ system.time(resim <- mclapply(1:nrow(max.bias.resh),
 ```
 
 ```{r,echo=F,results='hide'}
-resim <- rbindlist(resim)
+data(resim)
 resim[,relbias := mean.bias/(max.mean.bias.delta)]
 
 max.bias2 <- ddply(resim,"n1",transform,
@@ -540,7 +540,7 @@ scalehelper <- data.frame(n1=rep(-10,3),variable=factor(1:3,label=c("maximum mea
 dfa <- rbind(dfa,scalehelper)
                                                                                       
 mplot <- ggplot(dfa)+
-    geom_line(aes(n1,value),subset=.(variable=="maximum mean bias")) +
+    geom_smooth(aes(n1,value),subset=.(variable=="maximum mean bias")) +     geom_line(aes(n1,value),subset=.(variable=="maximum mean bias")) +
     geom_smooth(aes(n1,value),subset=.(variable!="maximum mean bias")) + geom_point(aes(n1,value),subset=.(variable!="maximum mean bias"),size=1) +
     facet_grid(variable~method,scale='free_y',labeller=lverbose) +xlab(expression(n[1]))+ylab('')+theme_bw()+xlim(c(2,50))
 print(mplot)

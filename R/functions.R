@@ -370,9 +370,9 @@ simMBIA <- function(delta=0,n1=2,sigma=1,runs=100)
 #' Simulation results from "Estimation after blinded interim analyses"
 #'
 #' A dataset containing the very simulation results used shown in the
-#' arti{diffmu-bar}e "Estimation after blinded interim analyses". The simulation
+#' article "Estimation after blinded interim analyses". The simulation
 #' may be re-run using code shown in the
-#' vignette "SimulateBias".
+#' vignette "simulations".
 #'
 #' @format A \code{data.frame}, each line corresponds to the outcome from
 #' one simulation run with $10^6$ simulated trials.
@@ -382,13 +382,24 @@ NULL
 #' Maximum Bias Simulations "Estimation after blinded interim analyses"
 #'
 #' A dataset containing the very simulation results used shown in the
-#' arti{diffmu-bar}e "Estimation after blinded interim analyses". The simulation
+#' article "Estimation after blinded interim analyses". The simulation
 #' may be re-run using code shown in the
-#' vignette "MaxBias".
+#' vignette "simulations".
 #'
 #' @format A \code{data.frame}, each line corresponds to the outcome from
-#' one simulation run with $10^6$ simulated trials.
+#' one simulation run with $10^7$ simulated trials.
 #' @name maxsim
+NULL
+
+#' Maximum Bias Re-Simulations "Estimation after blinded interim analyses"
+#'
+#' A dataset containing the very simulation results used shown in the
+#' article "Estimation after blinded interim analyses". The simulation
+#' may be re-run using code shown in the vignette "simulations". 
+#'
+#' @format A \code{data.frame}, each line corresponds to the outcome from
+#' one simulation run with $10^7$ simulated trials.
+#' @name resim
 NULL
 
 
