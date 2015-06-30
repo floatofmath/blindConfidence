@@ -350,7 +350,7 @@ stage sample sizes between 4 and 142.
 
 ```{r parameter grid maximum bias}
 G <- expand.grid(delta=round(seq(0,4,.1),2),
-                 sigma=round(seq(.5,4,.2),2),
+                 sigma=round(seq(.5,4,.1),2),
                  d = c(1),
                  n1 = 2:50)
 G$s <- zsd(G$n1,G$d,.5,.025,.2)
