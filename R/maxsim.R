@@ -42,7 +42,7 @@ select_mvarbias <- function(maxsim){
 }
 
 select_mncoverage <- function(maxsim){
-    rbind(maxsim[,.SD[which.max(total.prob)],by=n1,.SDcols=c('delta','sigma','d','n1','s','mean.bias')][,c("what.max","total.prob"):=list("total.prob",,NULL)],
+    rbind(maxsim[,.SD[which.max(total.prob)],by=n1,.SDcols=c('delta','sigma','d','n1','s','mean.bias')][,c("what.max","total.prob"):=list("total.prob",NULL)],
           maxsim[,.SD[which.max(uc.total.prob)],by=n1,.SDcols=c('delta','sigma','d','n1','s','uc.mean.bias')][,c("what.max","uc.total.prob"):=list("uc.total.prob",NULL)])
     rbind(maxsim[,.SD[which.max(upper.prob)],by=n1,.SDcols=c('delta','sigma','d','n1','s','mean.bias')][,c("what.max","upper.prob"):=list("upper.prob",NULL)],
           maxsim[,.SD[which.max(uc.upper.prob)],by=n1,.SDcols=c('delta','sigma','d','n1','s','uc.mean.bias')][,c("what.max","uc.upper.prob"):=list("uc.upper.prob",NULL)])
@@ -68,23 +68,32 @@ library(blindConfidence)
 library(ggplot2)
 library(reshape2)
 library(plyr)
-options(mc.cores=min(30,detectCores()-1))
+options(mc.cores=min(26,detectCores()-1))
 
-load('maxsim_node2_150620.Rd')
+load('~/maxsim_node2_150620.Rd')
 set.seed(980920)
 
+## maxmean
+
 G2s <- select_mmeanbias(maxsim)
-G2e <- add_epsilon(G2s,.1,.01)
+G2e <- add_epsilon(G2s,.06,.003)
+dim(G2e)
+resim1 <- simulate_maximum(G2e,4*10^6)
+print(fname <- paste('resim1_',Sys.info()['nodename'],'_',format(Sys.time(),"%y%m%d"),'.Rd',sep=''))
+save(resim1,file=fname)
+
+## maxvar
+
+G2s <- select_mvarbias(maxsim)
+G2e <- add_epsilon(G2s,.06,.003)
 dim(G2e)
 resim1 <- simulate_maximum(G2e,4*10^6)
 print(fname <- paste('resim1_',Sys.info()['nodename'],'_',format(Sys.time(),"%y%m%d"),'.Rd',sep=''))
 save(resim1,file=fname)
 
 
-
-
 G3s <- select_mmeanbias(maxsim)
-G3e <- add_epsilon(G3s,.1,.002)
+G3e <- add_epsilon(G3s,.06,.003)
 dim(G3e)
-resim2 <- simulate_maximum(G3e,4*10^6)
+resim2 <- simulate_maximum(G3e,6*10^6)
 save(resim2,file="resim_150703_node1.Rd")
