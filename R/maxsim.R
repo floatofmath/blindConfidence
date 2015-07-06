@@ -37,20 +37,20 @@ select_mmeanbias <- function(maxsim){
 }
 
 select_mvarbias <- function(maxsim){
-    rbind(maxsim[,.SD[which.min(variance.bias)],by=n1,.SDcols=c('delta','sigma','d','n1','s','mean.bias')][,c("what.max","variance.bias"):=list("variance.bias",NULL)],
-          maxsim[,.SD[which.min(uc.variance.bias)],by=n1,.SDcols=c('delta','sigma','d','n1','s','uc.mean.bias')][,c("what.max","uc.variance.bias"):=list("uc.variance.bias",NULL)])
+    rbind(maxsim[,.SD[which.min(variance.bias)],by=n1,.SDcols=c('delta','sigma','d','n1','s','variance.bias')][,c("what.max","variance.bias"):=list("variance.bias",NULL)],
+          maxsim[,.SD[which.min(uc.variance.bias)],by=n1,.SDcols=c('delta','sigma','d','n1','s','uc.variance.bias')][,c("what.max","uc.variance.bias"):=list("uc.variance.bias",NULL)])
 }
 
 select_mncoverage <- function(maxsim){
-    rbind(maxsim[,.SD[which.max(total.prob)],by=n1,.SDcols=c('delta','sigma','d','n1','s','mean.bias')][,c("what.max","total.prob"):=list("total.prob",NULL)],
-          maxsim[,.SD[which.max(uc.total.prob)],by=n1,.SDcols=c('delta','sigma','d','n1','s','uc.mean.bias')][,c("what.max","uc.total.prob"):=list("uc.total.prob",NULL)])
-    rbind(maxsim[,.SD[which.max(upper.prob)],by=n1,.SDcols=c('delta','sigma','d','n1','s','mean.bias')][,c("what.max","upper.prob"):=list("upper.prob",NULL)],
-          maxsim[,.SD[which.max(uc.upper.prob)],by=n1,.SDcols=c('delta','sigma','d','n1','s','uc.mean.bias')][,c("what.max","uc.upper.prob"):=list("uc.upper.prob",NULL)])
+    rbind(maxsim[,.SD[which.max(total.prob)],by=n1,.SDcols=c('delta','sigma','d','n1','s','total.prob')][,c("what.max","total.prob"):=list("total.prob",NULL)],
+          maxsim[,.SD[which.max(uc.total.prob)],by=n1,.SDcols=c('delta','sigma','d','n1','s','uc.total.prob')][,c("what.max","uc.total.prob"):=list("uc.total.prob",NULL)])
+    rbind(maxsim[,.SD[which.max(upper.prob)],by=n1,.SDcols=c('delta','sigma','d','n1','s','upper.prob')][,c("what.max","upper.prob"):=list("upper.prob",NULL)],
+          maxsim[,.SD[which.max(uc.upper.prob)],by=n1,.SDcols=c('delta','sigma','d','n1','s','uc.upper.prob')][,c("what.max","uc.upper.prob"):=list("uc.upper.prob",NULL)])
 }
 
 
 add_epsilon <- function(G,epsilon,by){
-    rbindlist(apply(G,1,function(x) expand.grid(n1=x[1],delta=x[2]+seq(-epsilon,epsilon,by),sigma=x[3]+seq(-epsilon,epsilon,by),d=x[4],s=x[6])))
+    rbindlist(apply(G,1,function(x) expand.grid(n1=as.numeric(x[1]),delta=as.numeric(x[2])+seq(-epsilon,epsilon,by),sigma=as.numeric(x[3])+seq(-epsilon,epsilon,by),d=as.numeric(x[4]),s=as.numeric(x[6]))))
 }
 
 
@@ -78,6 +78,7 @@ set.seed(980920)
 G2s <- select_mmeanbias(maxsim)
 G2e <- add_epsilon(G2s,.06,.003)
 dim(G2e)
+qplot(n1,sigma,data=maxsim)+geom_point(n1,sigma,data=G2e,col='green')+geom_point(n1,sigma,data=G2s,col='red')
 resim1 <- simulate_maximum(G2e,4*10^6)
 print(fname <- paste('resim1_',Sys.info()['nodename'],'_',format(Sys.time(),"%y%m%d"),'.Rd',sep=''))
 save(resim1,file=fname)
@@ -86,6 +87,7 @@ save(resim1,file=fname)
 
 G2s <- select_mvarbias(maxsim)
 G2e <- add_epsilon(G2s,.06,.003)
+qplot(n1,delta,data=maxsim)+geom_point(aes(n1,delta),data=G2e,col='green')+geom_point(aes(n1,delta),data=G2s,col='red')
 dim(G2e)
 resim1 <- simulate_maximum(G2e,4*10^6)
 print(fname <- paste('resim1_',Sys.info()['nodename'],'_',format(Sys.time(),"%y%m%d"),'.Rd',sep=''))
