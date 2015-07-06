@@ -32,8 +32,20 @@ simulate_maximum <- function(G,runs){
 
 
 select_mmeanbias <- function(maxsim){
-    rbind(maxsim[,.SD[which.min(mean.bias)],by=n1,.SDcols=c('delta','sigma','d','n1','s','mean.bias')][,mean.bias:=NULL],
-          maxsim[,.SD[which.min(uc.mean.bias)],by=n1,.SDcols=c('delta','sigma','d','n1','s','uc.mean.bias')][,uc.mean.bias:=NULL])
+    rbind(maxsim[,.SD[which.min(mean.bias)],by=n1,.SDcols=c('delta','sigma','d','n1','s','mean.bias')][,c("what.max","mean.bias"):=list("mean.bias",NULL)],
+          maxsim[,.SD[which.min(uc.mean.bias)],by=n1,.SDcols=c('delta','sigma','d','n1','s','uc.mean.bias')][,c("what.max","uc.mean.bias"):=list("uc.mean.bias",NULL)])
+}
+
+select_mvarbias <- function(maxsim){
+    rbind(maxsim[,.SD[which.min(variance.bias)],by=n1,.SDcols=c('delta','sigma','d','n1','s','mean.bias')][,c("what.max","variance.bias"):=list("variance.bias",NULL)],
+          maxsim[,.SD[which.min(uc.variance.bias)],by=n1,.SDcols=c('delta','sigma','d','n1','s','uc.mean.bias')][,c("what.max","uc.variance.bias"):=list("uc.variance.bias",NULL)])
+}
+
+select_mncoverage <- function(maxsim){
+    rbind(maxsim[,.SD[which.max(total.prob)],by=n1,.SDcols=c('delta','sigma','d','n1','s','mean.bias')][,c("what.max","total.prob"):=list("total.prob",,NULL)],
+          maxsim[,.SD[which.max(uc.total.prob)],by=n1,.SDcols=c('delta','sigma','d','n1','s','uc.mean.bias')][,c("what.max","uc.total.prob"):=list("uc.total.prob",NULL)])
+    rbind(maxsim[,.SD[which.max(upper.prob)],by=n1,.SDcols=c('delta','sigma','d','n1','s','mean.bias')][,c("what.max","upper.prob"):=list("upper.prob",NULL)],
+          maxsim[,.SD[which.max(uc.upper.prob)],by=n1,.SDcols=c('delta','sigma','d','n1','s','uc.mean.bias')][,c("what.max","uc.upper.prob"):=list("uc.upper.prob",NULL)])
 }
 
 
