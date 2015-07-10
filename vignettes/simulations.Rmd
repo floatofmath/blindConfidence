@@ -486,8 +486,8 @@ max.bias.resh <- rbindlist(list(within(max.bias[,1:4],{ variable  <-  "abs.mean"
                        ## within(max.bias[,c(1,11:13)],{ variable  <- "uc.rel.mean"})),use.names=FALSE)
              
 runs <- 5*10^6
-system.time(resim <- mclapply(1:nrow(max.bias.resh),
-                              function(i) {c(max.bias.resh[i,],
+system.time(resim <- rbindlist(mclapply(1:nrow(max.bias.resh),
+                                        function(i) {c(max.bias.resh[i,],
                                              simVBIA(delta=max.bias.resh[i,]$max.mean.bias.delta,
                                                      sigma=max.bias.resh[i,]$max.mean.bias.sigma,
                                                      d=1,
@@ -495,7 +495,7 @@ system.time(resim <- mclapply(1:nrow(max.bias.resh),
                                                      cf=1,
                                                      runs=runs,
                                                      alpha=.025,
-                                                     beta=.2))}))
+                                                     beta=.2))})))
 
 ```
 
