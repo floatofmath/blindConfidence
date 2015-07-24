@@ -352,7 +352,7 @@ stage sample sizes between 4 and 142.
 G <- expand.grid(delta=round(seq(0,4,.1),2),
                  sigma=round(seq(.5,4,.1),2),
                  d = c(1),
-                 n1 = 2:50)
+                 n1 = 2:10)
 G$s <- zsd(G$n1,G$d,.5,.025,.2)
 
 ```
@@ -361,7 +361,7 @@ G$s <- zsd(G$n1,G$d,.5,.025,.2)
 
 ```{r run simulations,eval=FALSE,echo=FALSE}
 set.seed(50014056)
-maxsim <- simulate_batch(G,10^6)
+maxsim <- simulate_batch(G,10^4)
 ```
 
 
@@ -415,7 +415,8 @@ previously simulations and simulate again.
 ```{r resim_mean,eval=F}
 maxmeanopt1 <- select_results(maxsim,c('mean.bias','uc.mean.bias'),base_columns=c('n1','tn1','delta','sigma','d','s'))
 
-G2mean <- add_epsilon(maxmeansim,.05,.01,c('delta','sigma'))
+G2mean <- add_epsilon(maxmeanopt1,.05,.01,c('delta','sigma'))
+plot_grid(maxsim,maxmeanopt1,G2mean,'sigma')
 maxmeansim2 <- simulate_batch(G2mean,4*10^6)
 
 ```
