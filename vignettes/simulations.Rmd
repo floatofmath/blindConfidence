@@ -354,49 +354,14 @@ G <- expand.grid(delta=round(seq(0,4,.1),2),
                  d = c(1),
                  n1 = 2:50)
 G$s <- zsd(G$n1,G$d,.5,.025,.2)
+
 ```
 
 
 
 ```{r run simulations,eval=FALSE,echo=FALSE}
 set.seed(50014056)
-runs <- 10^6
-system.time(maxsim <- rbindlist(mclapply(1:nrow(G),
-                                         function(i) {c(G[i,],
-                                                        simVBIA(delta=G[i,]$delta,
-                                                                sigma=G[i,]$sigma,
-                                                                d=G[i,]$d,
-                                                                s=G[i,]$s,
-                                                                cf=1,
-                                                                runs=runs,
-                                                                alpha=.025,
-                                                                beta=.2))})))
-
-
-
-
-## compute relative bias
-maxsim[,var.rbias:= variance.bias/sigma^2]
-
-## compute the theoretical lower bound for the variance bias
-maxsim[,bound:=lowerBound(n1,d)]
-
-## runs <- 10^2
-## bsim <- mclapply(1:nrow(gsim),function(i) {c(gsim[i,],
-##                                              simMBIA(delta=gsim[i,]$delta,
-##                                                      sigma=gsim[i,]$sigma,
-##                                                      n1=gsim[i,]$n1,
-##                                                      runs=runs))})
-
-## bsim <- do.call('cbind',bsim)
-## bsim <- as.data.frame(apply(bsim,1,unlist),row.names=NA)
-
-
-maxsim[,brannath:=.4*sqrt(2)*sigma/sqrt(n1)]
-
-
-
-
+maxsim <- simulate_batch(G,10^6)
 ```
 
 
@@ -410,6 +375,7 @@ save(maxsim,file=fname)
 
 
 ## Results
+
 
 
 ```{r load data maximum bias,echo=F}
@@ -441,84 +407,47 @@ lverbose = function(variable,value,string=NULL){
 }
 
 ```
+### Maximum bias of the mean
 
-Figure \ref{fig:maxbias} shows the results.
+To improve our estimate of the maximum we refine the grid around
+previously simulations and simulate again.
 
 ```{r resim_mean,eval=F}
-## gridsim <- within(gridsim,{relbias <- mean.bias/(delta+sqrt(vm))
-##                            uc.relbias <- uc.mean.bias/(delta+sqrt(vm))})
-maxsim <- within(maxsim,{relbias <- mean.bias/(delta)
-                           uc.relbias <- uc.mean.bias/(delta)})
+maxmeanopt1 <- select_results(maxsim,c('mean.bias','uc.mean.bias'),base_columns=c('n1','tn1','delta','sigma','d','s'))
 
-ns <- sort(unique(maxsim$n1))
-idx <- seq(.5,2,length.out=length(ns))
-
-max.bias <- ddply(maxsim,"n1",summarise,
-                  max.mean.bias= -min(mean.bias),
-                  max.mean.bias.delta = delta[which.min(mean.bias)],
-                  max.mean.bias.sigma = sigma[which.min(mean.bias)],
-                  ## max.mean.bias.vm = vm[which.min(mean.bias)],
-                  max.rel.mean.bias= -min(relbias),
-                  max.rel.mean.bias.delta = delta[which.min(relbias)],
-                  max.rel.mean.bias.sigma = sigma[which.min(relbias)],
-                  ## max.rel.mean.bias.vm = vm[which.min(relbias)],
-                  uc.max.mean.bias= -min(uc.mean.bias),
-                  uc.max.mean.bias.delta = delta[which.min(uc.mean.bias)],
-                  uc.max.mean.bias.sigma = sigma[which.min(uc.mean.bias)],
-                  ## uc.max.mean.bias.vm = vm[which.min(uc.mean.bias)],
-                  uc.max.rel.mean.bias= -min(uc.relbias),
-                  uc.max.rel.mean.bias.delta = delta[which.min(uc.relbias)],
-                  uc.max.rel.mean.bias.sigma = sigma[which.min(uc.relbias)]
-                  ## uc.max.rel.mean.bias.vm = vm[which.min(uc.relbias)]
-                  ## max.variance.bias= -min(variance.bias),
-                  ## max.variance.bias.delta = delta[which.min(variance.bias)],
-                  ## max.variance.bias.sigma = sigma[which.min(variance.bias)],
-                  ## max.variance.bias.vm = vm[which.min(variance.bias)],
-                  )
+G2mean <- add_epsilon(maxmeansim,.05,.01,c('delta','sigma'))
+maxmeansim2 <- simulate_batch(G2mean,4*10^6)
 
 ```
+
+Finally we select maximum bias values and resimulate to avoid
+selection bias.
 
 ```{r reshapeMean,eval=F}
 ## reshape and resim
-max.bias.resh <- rbindlist(list(within(max.bias[,1:4],{ variable  <-  "abs.mean"}),
-                       ## within(max.bias[,c(1,5:7)],{ variable  <- "rel.mean"})
-                       within(max.bias[,c(1,8:10)],{ variable  <- "uc.abs.mean"})),use.names=FALSE)
-                       ## within(max.bias[,c(1,11:13)],{ variable  <- "uc.rel.mean"})),use.names=FALSE)
-             
-runs <- 5*10^6
-system.time(resim <- rbindlist(mclapply(1:nrow(max.bias.resh),
-                                        simVBIA(delta=max.bias.resh[i,]$max.mean.bias.delta,
-                                                sigma=max.bias.resh[i,]$max.mean.bias.sigma,
-                                                d=1,
-                                                n1=max.bias.resh[i,]$n1,
-                                                cf=1,
-                                                runs=runs,
-                                                alpha=.025,
-                                                beta=.2))})))
-
+maxmeanopt2 <- select_results(maxmeansim2,c('mean.bias','uc.mean.bias'),base_columns=c('n1','tn1','delta','sigma','d','s'))
+maxmeansim3 <- simulate_batch(maxmeanopt2,10^7)
 ```
 
-```{r,echo=F,results='hide'}
-data(resim)
-resim[,relbias := mean.bias/(max.mean.bias.delta)]
+```{r,eval=FALSE,echo=FALSE}
+fname <- paste('resim_mean',Sys.info()['nodename'],'_',format(Sys.time(),"%y%m%d"),'.Rd',sep='')
+save(maxmeansim3,file=fname)
+```
 
-max.bias2 <- ddply(resim,"n1",transform,
+
+```{r,echo=F,results='hide'}
+data(maxmeansim)
+resim[,relbias := mean.bias/(delta)]
+
+max.bias2 <- ddply(maxmeansim3,"n1",transform,
                   max.mean.bias= mean.bias,
-                  ## max.mean.bias.vm = vm[which.min(mean.bias)],
-                  max.rel.mean.bias= mean.bias/max.mean.bias.delta,
-                  ## max.rel.mean.bias.vm = vm[which.min(relbias)],
+                  max.rel.mean.bias= mean.bias/delta,
                   uc.max.mean.bias= uc.mean.bias,
-                  ## uc.max.mean.bias.vm = vm[which.min(uc.mean.bias)],
-                   uc.max.rel.mean.bias= uc.mean.bias/max.mean.bias.delta,
-                   method=c("abs.mean"="unadjusted","uc.abs.mean"="adjusted")[variable]
-                  ## uc.max.rel.mean.bias.vm = vm[which.min(uc.relbias)]
-                  ## max.variance.bias= -min(variance.bias),
-                  ## max.variance.bias.delta = delta[which.min(variance.bias)],
-                  ## max.variance.bias.sigma = sigma[which.min(variance.bias)],
-                  ## max.variance.bias.vm = vm[which.min(variance.bias)],
+                  uc.max.rel.mean.bias= uc.mean.bias/delta,
+                  method=c("mean.bias"="unadjusted","uc.mean.bias"="adjusted")[what.max]
                   )
 
-max.bias2 <- max.bias2[,c('method','n1','max.mean.bias.delta','max.mean.bias.sigma','max.mean.bias','max.rel.mean.bias','uc.max.mean.bias','uc.max.rel.mean.bias')]
+max.bias2 <- max.bias2[,c('method','n1','delta','sigma','max.mean.bias','max.rel.mean.bias','uc.max.mean.bias','uc.max.rel.mean.bias')]
 
 ```
 
@@ -530,7 +459,7 @@ df <- melt(max.bias2,id=c('n1','method'))
 df <- within(df,scale <- c("absolute","relative")[grepl("rel",variable)+1])
 df <- within(df,variable <- sub("rel\\.","",variable))
 df <- within(df,variable <- sub("uc\\.","",variable))
-df <- df[df$variable %in% c('max.mean.bias','max.mean.bias.delta','max.mean.bias.sigma'),]
+df <- df[df$variable %in% c('max.mean.bias','delta','sigma'),]
 
 df <- within(df,variable <- factor(variable,labels=c('maximum mean bias',expression(delta),expression(sigma))))
 
@@ -542,7 +471,10 @@ mplot <- ggplot(dfa)+
     geom_smooth(aes(n1,value),subset=.(variable=="maximum mean bias")) +     geom_line(aes(n1,value),subset=.(variable=="maximum mean bias")) +
     geom_smooth(aes(n1,value),subset=.(variable!="maximum mean bias")) + geom_point(aes(n1,value),subset=.(variable!="maximum mean bias"),size=1) +
     facet_grid(variable~method,scale='free_y',labeller=lverbose) +xlab(expression(n[1]))+ylab('')+theme_bw()+xlim(c(2,50))
+    
+
 print(mplot)
+
 
 ## relativer bias (constallation die den bias,bzw,type I error, maximiert)
 ```
