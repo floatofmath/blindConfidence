@@ -8,7 +8,8 @@ Author: Florian Klinglmueller
 Maintainer: Florian Klinglmueller
     <florian.klinglmueller@meduniwien.ac.at>
 Depends:
-    R (>= 3.0.0), data.table (>= 1.9.4)
+    R (>= 3.0.0),
+    data.table (>= 1.9.4)
 Suggests:
     parallel,
     knitr,
