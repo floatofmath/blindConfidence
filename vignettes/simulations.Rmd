@@ -363,12 +363,16 @@ G$s <- zsd(G$n1,G$d,.5,.025,.2)
 set.seed(50014056)
 options(mc.cores=min(38,detectCores()-1))
 maxsim <- simulate_batch(G,10^6)
-fname <- paste('maxsim_',Sys.info()['nodename'],'_',format(Sys.time(),"%y%m%d"),'.Rd',sep='')
-save(maxsim,file=fname)
 ```
 
 
 For each scenario we perform $10^6$ simulation runs.
+
+
+```{r,eval=FALSE,echo=FALSE}
+fname <- paste('maxsim_',Sys.info()['nodename'],'_',format(Sys.time(),"%y%m%d"),'.Rd',sep='')
+save(maxsim,file=fname)
+```
 
 
 ## Results
@@ -416,22 +420,17 @@ G2mean <- add_epsilon(maxmeanopt1,.05,.01,c('delta','sigma'))
 plot_grid(maxsim,maxmeanopt1,G2mean,'delta')
 options(mc.cores=min(20,detectCores()-1))
 maxmeansim2 <- simulate_batch(G2mean,4*10^6)
+## reshape and resim
+maxmeanopt2 <- select_results(maxmeansim2,c('mean.bias','uc.mean.bias'),base_columns=c('n1','tn1','delta','sigma','d','s'))
+maxmeansim3 <- simulate_batch(maxmeanopt2,10^7)
+fname <- paste('resim_mean',Sys.info()['nodename'],'_',format(Sys.time(),"%y%m%d"),'.Rd',sep='')
+save(maxmeansim3,file=fname)
 
 ```
 
 Finally we select maximum bias values and resimulate to avoid
 selection bias.
 
-```{r reshapeMean,eval=F}
-## reshape and resim
-maxmeanopt2 <- select_results(maxmeansim2,c('mean.bias','uc.mean.bias'),base_columns=c('n1','tn1','delta','sigma','d','s'))
-maxmeansim3 <- simulate_batch(maxmeanopt2,10^7)
-```
-
-```{r,eval=FALSE,echo=FALSE}
-fname <- paste('resim_mean',Sys.info()['nodename'],'_',format(Sys.time(),"%y%m%d"),'.Rd',sep='')
-save(maxmeansim3,file=fname)
-```
 
         
 ```{r,echo=F,results='hide'}
@@ -463,14 +462,14 @@ df <- within(df,variable <- factor(variable))
 df <- within(df,variable <- revalue(variable,c('max.mean.bias'='maximum mean bias')))
 df <- within(df,variable <- relevel(variable,'delta'))
 df <- within(df,variable <- relevel(variable,'maximum mean bias'))
-
+df <- within(df,method <- relevel(method,'unadjusted'))
 
 dfa <- df[df$scale=="absolute",]#"relative",]#
 scalehelper <- data.frame(n1=rep(-10,3),variable=factor(1:3,label=c("maximum mean bias",expression(delta),expression(sigma))),value=rep(0,3),scale=rep("absolute",3),method=rep("adjusted",3))
 dfa <- rbind(dfa,scalehelper)
                                                                                       
 mplot <- ggplot(dfa)+
-    geom_smooth(aes(n1,value),subset=.(variable=="maximum mean bias")) +     geom_line(aes(n1,value),subset=.(variable=="maximum mean bias")) +
+    geom_line(aes(n1,value),subset=.(variable=="maximum mean bias")) +
     geom_smooth(aes(n1,value),subset=.(variable!="maximum mean bias")) + geom_point(aes(n1,value),subset=.(variable!="maximum mean bias"),size=1) +
     facet_grid(variable~method,scale='free_y',labeller=lverbose) +xlab(expression(n[1]))+ylab('')+theme_bw()+xlim(c(2,50))
     
@@ -493,23 +492,18 @@ maxvarianceopt1 <- select_results(maxsim,c('variance.bias','uc.variance.bias'),b
 G2variance <- add_epsilon(maxvarianceopt1,.05,.01,c('delta','sigma'))
 plot_grid(maxsim,maxvarianceopt1,G2variance,'sigma')
 maxvariancesim2 <- simulate_batch(G2variance,4*10^6)
+## reshape and resim
+maxvarianceopt2 <- select_results(maxvariancesim2,c('variance.bias','uc.variance.bias'),base_columns=c('n1','tn1','delta','sigma','d','s'))
+plot_grid(G2variance,maxvarianceopt1,maxvarianceopt2,'delta')
+maxvariancesim3 <- simulate_batch(maxvarianceopt2,10^7)
+fname <- paste('resim_variance',Sys.info()['nodename'],'_',format(Sys.time(),"%y%m%d"),'.Rd',sep='')
+save(maxvariancesim3,file=fname)
 
 ```
 
 Finally we select maximum bias values and resimulate to avoid
 selection bias.
 
-```{r reshapeMean,eval=F}
-## reshape and resim
-maxvarianceopt2 <- select_results(maxvariancesim2,c('variance.bias','uc.variance.bias'),base_columns=c('n1','tn1','delta','sigma','d','s'))
-plot_grid(G2variance,maxvarianceopt1,maxvarianceopt2,'delta')
-maxvariancesim3 <- simulate_batch(maxvarianceopt2,10^7)
-```
-
-```{r,eval=FALSE,echo=FALSE}
-fname <- paste('resim_variance',Sys.info()['nodename'],'_',format(Sys.time(),"%y%m%d"),'.Rd',sep='')
-save(maxvariancesim3,file=fname)
-```
 
 
 ```{r,echo=F,results='hide'}
@@ -518,16 +512,17 @@ data(maxvariancesim)
 max.varbias2 <- ddply(maxvariancesim3,"n1",transform,
                   max.variance.bias= variance.bias,
                   uc.max.variance.bias= uc.variance.bias,
-                  method=c("variance.bias"="adjusted","uc.variance.bias"="unadjusted")[what.max]
+                      method=c("variance.bias"="adjusted","uc.variance.bias"="unadjusted")[what.max],
+                  theoretical = bound
                   )
 
-max.varbias2 <- max.varbias2[,c('method','n1','delta','sigma','max.variance.bias','uc.max.variance.bias')]
+max.varbias2 <- max.varbias2[,c('method','n1','delta','sigma','max.variance.bias','uc.max.variance.bias','theoretical')]
 ```
 
 
 ```{r maxVarbias,echo=F,fig.width=4,fig.height=5}
 
-df <- melt(max.varbias2,id=c('n1','method'))
+df <- melt(max.varbias2,id=c('n1','method','theoretical'))
 df <- subset(df,!(method=='adjusted' & variable == 'uc.max.variance.bias'))
 df <- subset(df,!(method=='unadjusted' & variable == 'max.variance.bias'))
 
@@ -539,15 +534,15 @@ df <- within(df,variable <- factor(variable))
 df <- within(df,variable <- revalue(variable,c('max.variance.bias'='maximum variance bias')))
 df <- within(df,variable <- relevel(variable,'delta'))
 df <- within(df,variable <- relevel(variable,'maximum variance bias'))
-
+df <- within(df,method <- relevel(method,'unadjusted'))
 
 
 dfa <- df[df$scale=="absolute",]#"relative",]#
-scalehelper <- data.frame(n1=rep(-10,3),variable=factor(1:3,label=c("maximum variance bias",expression(delta),expression(sigma))),value=rep(0,3),scale=rep("absolute",3),method=rep("adjusted",3))
+scalehelper <- data.frame(n1=rep(-10,3),variable=factor(1:3,label=c("maximum variance bias",expression(delta),expression(sigma))),value=rep(0,3),scale=rep("absolute",3),method=rep("adjusted",3),theoretical=3)
 dfa <- rbind(dfa,scalehelper)
 
 vplot <- ggplot(dfa,aes(n1,value))+
-    geom_line(subset=.(variable=="maximum variance bias")) +
+    geom_line(subset=.(variable=="maximum variance bias")) + geom_line(aes(n1,theoretical),subset=.(variable=="maximum variance bias" & method=='unadjusted'),linetype='dotted') + 
     geom_smooth(subset=.(variable==levels(variable)[3])) + geom_point(subset=.(variable!="maximum variance bias"),size=1) + geom_smooth(subset=.(variable==levels(variable)[2])) +
     facet_grid(variable~method,scale='free_y',labeller=lverbose(string="Max. variance bias")) +xlab(expression(n[1]))+ylab('Value')+theme_bw()+xlim(c(2,50))
 print(vplot)
@@ -584,22 +579,16 @@ maxcoverageopt1 <- select_results(maxsim,c('total.prob','upper.prob','uc.total.p
 G2coverage <- add_epsilon(maxcoverageopt1,.05,.01,c('delta','sigma'))
 plot_grid(maxsim,maxcoverageopt1,G2coverage,'sigma')
 maxcoveragesim2 <- simulate_batch(G2coverage,4*10^6)
+## reshape and resim
+maxcoverageopt2 <- select_results(maxcoveragesim2,c('total.prob','upper.prob','uc.total.prob','uc.upper.prob'),base_columns=c('n1','tn1','delta','sigma','d','s'))
+maxcoveragesim3 <- simulate_batch(maxcoverageopt2,10^7)
+fname <- paste('resim_coverage',Sys.info()['nodename'],'_',format(Sys.time(),"%y%m%d"),'.Rd',sep='')
+save(maxcoveragesim3,file=fname)
 
 ```
 
 Finally we select maximum bias values and resimulate to avoid
 selection bias.
-
-```{r reshapeMean,eval=F}
-## reshape and resim
-maxcoverageopt2 <- select_results(maxcoveragesim2,c('total.prob','upper.prob','uc.total.prob','uc.upper.prob'),base_columns=c('n1','tn1','delta','sigma','d','s'))
-maxcoveragesim3 <- simulate_batch(maxcoverageopt2,10^7)
-```
-
-```{r,eval=FALSE,echo=FALSE}
-fname <- paste('resim_coverage',Sys.info()['nodename'],'_',format(Sys.time(),"%y%m%d"),'.Rd',sep='')
-save(maxcoveragesim3,file=fname)
-```
 
 
 ```{r,echo=F,results='hide'}
@@ -624,8 +613,8 @@ max.coverage2 <- max.coverage2[,c('method','side','n1','delta','sigma','max.twos
 df <- melt(max.coverage2,id=c('n1','method','side'))
 df <- subset(df,!(method=='adjusted' & variable %in% c('uc.max.onesided','uc.max.twosided')))
 df <- subset(df,!(method=='unadjusted' & variable %in% c('max.onesided','max.twosided')))
-
-
+df <- subset(df,!(side=='one-sided' & variable %in% c('uc.max.twosided','max.twosided')))
+df <- subset(df,!(side=='two-sided' & variable %in% c('max.onesided','uc.max.onesided')))
 df <- within(df,scale <- c("absolute","relative")[grepl("rel",variable)+1])
 df <- within(df,variable <- sub("rel\\.","",variable))
 df <- within(df,variable <- sub("uc\\.","",variable))
@@ -635,6 +624,7 @@ df <- within(df,variable <- factor(variable))
 df <- within(df,variable <- revalue(variable,c('max.coverage'='actual - nominal coverage','delta'=expression(delta),'sigma'=expression(sigma))))
 df <- within(df,variable <- relevel(variable,'delta'))
 df <- within(df,variable <- relevel(variable,'actual - nominal coverage'))
+df <- within(df,method <- relevel(method,'unadjusted'))
 
 dfa <- df[df$scale=="absolute",]#"relative",]#
 scalehelper <- data.frame(n1=rep(-10,6),variable=factor(1:3,label=c("actual - nominal coverage","delta","sigma")),value=rep(0,6),scale=rep("absolute",3),method=rep("adjusted",3),side=rep(c('one-sided','two-sided'),each=3))
