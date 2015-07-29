@@ -363,16 +363,14 @@ G$s <- zsd(G$n1,G$d,.5,.025,.2)
 set.seed(50014056)
 options(mc.cores=min(38,detectCores()-1))
 maxsim <- simulate_batch(G,10^6)
+
+fname <- paste('maxsim_',Sys.info()['nodename'],'_',format(Sys.time(),"%y%m%d"),'.Rd',sep='')
+save(maxsim,file=fname)
 ```
 
 
 For each scenario we perform $10^6$ simulation runs.
 
-
-```{r,eval=FALSE,echo=FALSE}
-fname <- paste('maxsim_',Sys.info()['nodename'],'_',format(Sys.time(),"%y%m%d"),'.Rd',sep='')
-save(maxsim,file=fname)
-```
 
 
 ## Results
