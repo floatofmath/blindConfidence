@@ -17,9 +17,11 @@ probabilities and biases of estimates are saved in
 are saved in \code{data{casesim}}; the results for maximizing the
 bias of the effect size and variance estimate as well as the
 inflation of the non-coverage probability are saved in
-\code{data{maxsim}}. Rebuilding the vignette will use the saved
-results to redraw all the graphics from the paper. In order to
-rerun the simulations the corresponding code chunks need to be
+\code{data{maxsim}}, \code{data{maxmeansim}},
+\code{data{maxvariancesim}} and
+\code{data{maxcoveragesim}}. Rebuilding the vignette will use the
+saved results to redraw all the graphics from the paper. In order
+to rerun the simulations the corresponding code chunks need to be
 configured for evaluation. NOTE: although this package should run
 on Windows it has been tested and optimized under Linux.
 }

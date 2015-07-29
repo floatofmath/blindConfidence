@@ -377,7 +377,7 @@ For each scenario we perform $10^6$ simulation runs.
 
 
 
-```{r load data maximum bias,echo=F}
+```{r load data maximum bias,eval=F,echo=F}
 data(maxsim)
 
 full.sim <- maxsim
