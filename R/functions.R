@@ -1,3 +1,31 @@
+#' Simulation of estimation after blinded interim analysis
+#'
+#' This package provides all code used to perform and summarize the
+#' simulation study shown in our paper "Estimation after blinded
+#' interim analysis". The code for all simulations is provided in
+#' \code{vignette{'simulations'}}, simulation results for coverage
+#' probabilities and biases of estimates are saved in
+#' \code{data{gridsim}}; the results from the case study simulation
+#' are saved in \code{data{casesim}}; the results for maximizing the
+#' bias of the effect size and variance estimate as well as the
+#' inflation of the non-coverage probability are saved in
+#' \code{data{maxsim}}, \code{data{maxmeansim}},
+#' \code{data{maxvariancesim}} and
+#' \code{data{maxcoveragesim}}. Rebuilding the vignette will use the
+#' saved results to redraw all the graphics from the paper. In order
+#' to rerun the simulations the corresponding code chunks need to be
+#' configured for evaluation. NOTE: although this package should run
+#' on Windows it has been tested and optimized under Linux.
+#' 
+#'
+#' @name blindConfidence-package
+#' @aliases blindConfidence
+#' @docType package
+#' @title Simulation of estimation after blinded interim analysis
+#' @author Florian Klinglmueller
+#' @import data.table 
+NULL
+
 #' Compute sample size of z-test
 #'
 #' \code{zss} computes per-group the sample size for the z-test
