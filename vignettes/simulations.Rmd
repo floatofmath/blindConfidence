@@ -10,7 +10,7 @@ vignette: >
 ---
 
 ```{r knitr options,echo=F}
-knitr::opts_chunk$set(echo=FALSE,warning=FALSE,results='hide',fig.width=7,fig.height=7)
+knitr::opts_chunk$set(echo=FALSE,warning=FALSE,results='hide',fig.width=7,fig.height=7,message=FALSE)
 ```
 
 This vignette presents the numerical results of the article
@@ -371,7 +371,12 @@ save(maxsim,file=fname)
 
 For each scenario we perform $10^6$ simulation runs.
 
-
+ Initially $10^6$ simulations were performed for a range of true
+  mean  differences $\delta\in[0,4]$ and standard deviations
+  $\sigma\in[.5,4]$ in steps of $0.1$. In a second step the grid was
+  refined in a vicinity of parameter values at which maxima were
+  obtaind   which was subsequently refined
+  in the vicinity of )
 
 ## Results
 
@@ -398,7 +403,7 @@ lverbose = function(variable,value,string=NULL){
           }
     }
     if(is.null(string)){
-        string <- 'Absolute Bias'
+        string <- 'Absolute bias'
         return(f(variable,value))
     } else {
           return(f)
@@ -467,7 +472,7 @@ scalehelper <- data.frame(n1=rep(-10,3),variable=factor(1:3,label=c("maximum mea
 dfa <- rbind(dfa,scalehelper)
                                                                                       
 mplot <- ggplot(dfa)+
-    geom_line(aes(n1,value),subset=.(variable=="maximum mean bias")) +
+    geom_line(aes(n1,-value),subset=.(variable=="maximum mean bias")) +
     geom_smooth(aes(n1,value),subset=.(variable!="maximum mean bias")) + geom_point(aes(n1,value),subset=.(variable!="maximum mean bias"),size=1) +
     facet_grid(variable~method,scale='free_y',labeller=lverbose) +xlab(expression(n[1]))+ylab('')+theme_bw()+xlim(c(2,50))
     
@@ -483,7 +488,7 @@ To improve our estimate of the maximum we refine the grid around
 previously simulations and simulate again.
 
 
-```{r resim_mean,eval=F}
+```{r resim_variance,eval=F}
 maxvarianceopt1 <- select_results(maxsim,c('variance.bias','uc.variance.bias'),base_columns=c('n1','tn1','delta','sigma','d','s'))
 
 
@@ -541,9 +546,9 @@ scalehelper <- data.frame(n1=rep(-10,3),variable=factor(1:3,label=c("maximum var
 dfa <- rbind(dfa,scalehelper)
 
 vplot <- ggplot(dfa,aes(n1,value))+
-    geom_line(subset=.(variable=="maximum variance bias")) + geom_line(aes(n1,theoretical),subset=.(variable=="maximum variance bias" & method=='unadjusted'),linetype='dotted') + 
+    geom_line(aes(n1,-value),subset=.(variable=="maximum variance bias")) + geom_line(aes(n1,-theoretical),subset=.(variable=="maximum variance bias" & method=='unadjusted'),linetype='dotted') + 
     geom_smooth(subset=.(variable==levels(variable)[3])) + geom_point(subset=.(variable!="maximum variance bias"),size=1) + geom_smooth(subset=.(variable==levels(variable)[2])) +
-    facet_grid(variable~method,scale='free_y',labeller=lverbose(string="Max. variance bias")) +xlab(expression(n[1]))+ylab('Value')+theme_bw()+xlim(c(2,50))
+    facet_grid(variable~method,scale='free_y',labeller=lverbose(string="Absolute bias")) +xlab(expression(n[1]))+ylab('')+theme_bw()+xlim(c(2,50))
 print(vplot)
 
 
@@ -557,7 +562,7 @@ To improve our estimate of the maximum we refine the grid around
 previously simulations and simulate again.
 
 
-```{r resim_mean,eval=F}
+```{r resim_coverage,eval=F}
 ## max.coverage <- ddply(maxsim,"n1",summarise,
 ##                       max.coverage = -(max(total.prob)-.05),
 ##                       max.coverage.bias.delta = delta[which.max(total.prob)],
@@ -573,16 +578,16 @@ previously simulations and simulate again.
 ##                       uc.max.onesided.coverage.bias.sigma = sigma[which.max(uc.upper.prob)]
 ##                       )
 
-maxcoverageopt1 <- select_results(maxsim,c('total.prob','upper.prob','uc.total.prob','uc.upper.prob'),base_columns=c('n1','tn1','delta','sigma','d','s'),functional=which.max)
+maxcoverageopt1 <- select_results(maxsim,c('total.prob','upper.prob','uc.total.prob','uc.upper.prob'),base_columns=c('n1','tn1','delta','sigma','d','s','total.prob','upper.prob'),functional=which.max)
 
-G2coverage <- add_epsilon(maxcoverageopt1,.05,.01,c('delta','sigma'))
+G2coverage <- add_epsilon(maxcoverageopt1,.03,.01,c('delta','sigma'))
 plot_grid(maxsim,maxcoverageopt1,G2coverage,'sigma')
 options(mc.cores=min(20,detectCores()-1))
-maxcoveragesim2 <- simulate_batch(G2coverage,10^7)
+maxcoveragesim2 <- simulate_batch(G2coverage,5*10^6)
 ## reshape and resim
 maxcoverageopt2 <- select_results(maxcoveragesim2,c('total.prob','upper.prob','uc.total.prob','uc.upper.prob'),base_columns=c('n1','tn1','delta','sigma','d','s'))
-options(mc.cores=min(10,detectCores()-1))
-maxcoveragesim3 <- simulate_batch(maxcoverageopt2,5*10^7)
+options(mc.cores=min(16,detectCores()-1))
+maxcoveragesim3 <- simulate_batch(maxcoverageopt2,10^7)
 fname <- paste('resim_coverage',Sys.info()['nodename'],'_',format(Sys.time(),"%y%m%d"),'.Rd',sep='')
 save(maxcoveragesim3,file=fname)
 
@@ -610,7 +615,7 @@ max.coverage2 <- max.coverage2[,c('method','side','n1','delta','sigma','max.twos
 ```
 
 
-```{r maxVarbias,echo=F,fig.width=4,fig.height=5}
+```{r maxCoverage,echo=F,fig.width=5,fig.height=5}
 df <- melt(max.coverage2,id=c('n1','method','side'))
 df <- subset(df,!(method=='adjusted' & variable %in% c('uc.max.onesided','uc.max.twosided')))
 df <- subset(df,!(method=='unadjusted' & variable %in% c('max.onesided','max.twosided')))
@@ -633,10 +638,10 @@ dfa <- rbind(dfa,scalehelper)
 
 
 cplot <- ggplot(dfa)+
-    geom_line(aes(n1,value,linetype=side,shape=side),subset=.(variable=="actual - nominal coverage"))  +
+    geom_line(aes(n1,100*value,linetype=side,shape=side),subset=.(variable=="actual - nominal coverage"))  +
         geom_smooth(aes(n1,value),subset=.(variable!="actual - nominal coverage"))  +
-            geom_point(aes(n1,value,shape=side),subset=.(variable!="actual - nominal coverage"),size=2)  +
-                            facet_grid(variable~method,scale='free_y',labeller=lverbose(string='Actual - nominal [%]')) +xlab(expression(n[1]))+ylab('Value')+theme_bw()+xlim(c(2,50))
+            geom_point(aes(n1,value,shape=side),subset=.(variable!="actual - nominal coverage"),size=1.5)  +
+                            facet_grid(variable~method,scale='free_y',labeller=lverbose(string='Actual - nominal [%]')) +xlab(expression(n[1]))+ylab('')+theme_bw()+xlim(c(2,50))
 print(cplot)
     
 
@@ -647,25 +652,9 @@ print(cplot)
 
 ```{r export figures,eval=F,echo=F,results='hide',include=F}
 library(bt88.03.704)
-
-pdf('~/newLife/science/2015/iroes/blinded_florian/blinded-max_short.pdf',width=10,height=4)
-multiplot(mplot,vplot,cplot,cols=3)
-dev.off()
-pdf('~/newLife/science/2015/iroes/blinded_florian/blinded-max_tall.pdf',width=10,height=7)
-multiplot(mplot,vplot,cplot,cols=3)
-dev.off()
-
-
-cairo_ps('maxbias.eps',height=5,width=4)
-print(mplot)
-dev.off()
-
-cairo_ps('maxcbias.eps',height=5,width=4)
-print(cplot)
-dev.off()
-
-cairo_ps('maxvbias.eps',height=5,width=4)
-print(vplot)
+setwd('~/Dropbox/msi/2013/research/blind_confidence/rssversion/graphs/')
+cairo_ps('blinded-max.eps',width=11,height=4.4,pointsize=8)
+multiplot(mplot,vplot,cplot,cols=3,widths=unit(c(.3,.3,.4),'npc'),titles = c("Mean bias","Variance bias","Actual - nominal coverage"))
 dev.off()
 
 ```
@@ -713,16 +702,7 @@ G <- expand.grid(delta = round(seq(-2*d, 2*d,d/20),2),
 
 runs=10^7
 
-casesim <- rbindlist(mclapply(1:nrow(G),
-                              function(i) {c(G[i,],
-                                             simVBIA(delta=G[i,]$delta,
-                                                     sigma=G[i,]$sigma,
-                                                     d=G[i,]$d,s=G[i,]$s,
-                                                     n1=G[i,]$n1,
-                                                     cf=1,runs=runs,
-                                                     alpha=.025,
-                                                     beta=.2))}))
-
+casesim <- simulate_batch(G,runs)
 runs <- 10^5
 bsim <- rbindlist(lapply(1:nrow(G),
                              function(i) {c(G[i,],
@@ -738,12 +718,9 @@ pN <- 2*ceiling(zss(s,d,alpha,beta))
 
 gsim <- casesim
 
-gsim$var.rbias <- gsim$variance.bias/gsim$sigma^2
-gsim$bound <- lowerBound(gsim$n1,gsim$d)
-gsim$mean.upper.bias <- bsim$m.bias
-gsim$mean.lower.bias <- bsim$m.bias.n
+gsim[,mean.upper.bias := bsim$m.bias]
+gsim[,mean.lower.bias := bsim$m.bias.n]
 casesim <- gsim
-casesim$brannath <- .4*sqrt(2)*casesim$sigma/sqrt(casesim$n1)
 
 print(fname <- paste('casesim_',Sys.info()['nodename'],'_',format(Sys.time(),"%y%m%d"),'.Rd',sep=''))
 save(casesim,file=fname)
@@ -817,40 +794,40 @@ $2\delta_0=11$ in steps of $0.05$ and $\sigma$ from $1$ to $20$ in
 steps of $1$. Detailed results are shown in Figure \ref{fig:case}
 where we plot the coverage of the confidence intervals and biases of
 the mean, and the variance estimate. The variance bias gets as low as
-$`r round(casesim[uc.max.var.bias,'uc.variance.bias'],2)`$ if the
+$`r round(casesim[uc.max.var.bias,uc.variance.bias],2)`$ if the
 true mean effect is $\delta =
-`r round(casesim[uc.max.var.bias,'delta'],2)`$ and the true
+`r round(casesim[uc.max.var.bias,delta],2)`$ and the true
 standard deviation $\sigma =
-`r round(casesim[uc.max.var.bias,'sigma'])`$ (\ie it reaches the
+`r round(casesim[uc.max.var.bias,sigma],2)`$ (\ie it reaches the
 theoretical boundary within simulation error). For smaller values of
 the true standard deviation the bias is smaller in magnitude. The mean
 bias goes up to
-$`r round(casesim[uc.max.mean.bias,'uc.mean.bias'],2)`$ for
+$`r round(casesim[uc.max.mean.bias,uc.mean.bias],2)`$ for
 negative values of the true effect size and as low as
-$`r round(casesim[uc.min.mean.bias,'uc.mean.bias'],2)`$ for
+$`r round(casesim[uc.min.mean.bias,uc.mean.bias],2)`$ for
 positive values of the true effect size. The absolute bias reaches its
 maximum for a true mean differences of $\delta = \pm
-`r round(casesim[uc.min.mean.bias,'delta'],2)`$) and standard
+`r round(casesim[uc.min.mean.bias,delta],2)`$) and standard
 deviation of $\sigma =
-`r round(casesim[uc.min.mean.bias,'sigma'])`$). The maximum
+`r round(casesim[uc.min.mean.bias,sigma])`$). The maximum
 inflation of the coverage probabilities of one-sided $97.5\%$ and
 two-sided $95\%$ confidence intervals is
-$`r 100*round(casesim[uc.max.nc.upper,'uc.upper.prob']-.025,3)`$
+$`r 100*round(casesim[uc.max.nc.upper,uc.upper.prob]-.025,3)`$
 and
-$`r 100*round(casesim[uc.max.nc.total,'uc.total.prob']-.05,3)`$
+$`r 100*round(casesim[uc.max.nc.total,uc.total.prob]-.05,3)`$
 percentage points, respectively. The actual coverage probabilities are
 smallest for large absolute values of the true mean difference and
 standard deviations of around $5$.
     
 If the sample size reassessment is based on the adjusted variance
 estimate, the absolute bias of the variance and mean estimate will be
-even larger taking values up to $`r abs(round(casesim[max.var.bias,'variance.bias'],2))`$ for the
-variance and up to $`r round(casesim[max.mean.bias,'mean.bias'],2)`$ for the mean,
+even larger taking values up to $`r abs(round(casesim[max.var.bias,variance.bias],2))`$ for the
+variance and up to $`r round(casesim[max.mean.bias,mean.bias],2)`$ for the mean,
 respectively. The inflation of the coverage probabilities goes up to
-$`r 100*round(casesim[max.nc.upper,'upper.prob']-.025,3)`$
+$`r 100*round(casesim[max.nc.upper,upper.prob]-.025,3)`$
 percentage points for the
 one-sided confidence intervals and
-$`r 100*round(casesim[max.nc.total,'total.prob']-.05,3)`$
+$`r 100*round(casesim[max.nc.total,total.prob]-.05,3)`$
 percentage points for the
 two-sided intervals. 
 
