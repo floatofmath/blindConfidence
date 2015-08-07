@@ -67,7 +67,7 @@ select_results <- function(maxsim,what,base_columns=c('delta','sigma','d','n1','
         base_columns <- names(maxsim)
     }
     select <- function(what){
-        .c <- substitute(.I[which.min(column)],list(column=as.name(what)))
+        .c <- substitute(.I[functional(column)],list(column=as.name(what)))
         return(maxsim[maxsim[,eval(.c),by=n1]$V1,][,base_columns,with=F][,what.max:=what])
     }
     rbindlist(lapply(what,select))
