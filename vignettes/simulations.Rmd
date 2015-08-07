@@ -585,7 +585,11 @@ plot_grid(maxsim,maxcoverageopt1,G2coverage,'sigma')
 options(mc.cores=min(20,detectCores()-1))
 maxcoveragesim2 <- simulate_batch(G2coverage,5*10^6)
 ## reshape and resim
+<<<<<<< HEAD
 maxcoverageopt2 <- select_results(maxcoveragesim2,c('total.prob','upper.prob','uc.total.prob','uc.upper.prob'),base_columns=c('n1','tn1','delta','sigma','d','s'),functional=which.max)
+=======
+maxcoverageopt2 <- select_results(maxcoveragesim2,c('total.prob','upper.prob','uc.total.prob','uc.upper.prob'),base_columns=c('n1','tn1','delta','sigma','d','s'))
+>>>>>>> b34daed67b4f1cbeb1be34315af55cc8f86a5b57
 options(mc.cores=min(16,detectCores()-1))
 maxcoveragesim3 <- simulate_batch(maxcoverageopt2,10^7)
 fname <- paste('resim_coverage',Sys.info()['nodename'],'_',format(Sys.time(),"%y%m%d"),'.Rd',sep='')
