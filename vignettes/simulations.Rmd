@@ -43,6 +43,7 @@ balanced allocation.
 ## For running the simulations and plotting the results the following
 ## packages have to be loaded:
 library(parallel)
+## devtools::install_github('floatofmath/blindConfidence')
 library(blindConfidence)
 library(ggplot2)
 library(reshape2)
@@ -382,7 +383,7 @@ For each scenario we perform $10^6$ simulation runs.
 
 
 
-```{r load data maximum bias,eval=F,echo=F}
+```{r load data maximum bias,eval=T,echo=F}
 data(maxsim)
 
 full.sim <- maxsim
@@ -583,7 +584,7 @@ maxcoverageopt1 <- select_results(maxsim,c('total.prob','upper.prob','uc.total.p
 G2coverage <- add_epsilon(maxcoverageopt1,.03,.01,c('delta','sigma'))
 plot_grid(maxsim,maxcoverageopt1,G2coverage,'sigma')
 options(mc.cores=min(20,detectCores()-1))
-maxcoveragesim2 <- simulate_batch(G2coverage,5*10^6)
+maxcoveragesim2 <- simulate_batch(G2coverage,4*10^5)
 ## reshape and resim
 maxcoverageopt2 <- select_results(maxcoveragesim2,c('total.prob','upper.prob','uc.total.prob','uc.upper.prob'),base_columns=c('n1','tn1','delta','sigma','d','s'),functional=which.max)
 options(mc.cores=min(16,detectCores()-1))
@@ -599,6 +600,8 @@ selection bias.
 
 ```{r,echo=F,results='hide'}
 data(maxcoveragesim)
+load('~/srv-home/resim_coveragenode5_150825.Rd')
+
 
 
 max.coverage2 <- ddply(maxcoveragesim3,"n1",transform,

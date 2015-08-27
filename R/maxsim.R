@@ -1,8 +1,11 @@
 ##' Simulate bias of blinded sample size review for a range of parameter settings
 ##'
+##' To use mclapply2 from bt88.03.704 you have to install this library (e.g. \code{devtools::install_github('floatofmath/bt88.03.704')}) unfortunately the statusbar implementation does not work with Rstudio.
+##' 
 ##' @title Batch simulate blinded sample size review bias
 ##' @param G Object with paramter settings for \code{delta}, \code{sigma} and \code{n1} in each row 
 ##' @param runs Number of simulation runs 
+##' @param use_mclapply2 use mclapply2 from package bt88.03.704 which implements a status bar (see details)
 ##' @return Object with parameters and simulation results in each row
 ##' @author Florian Klinglmueller
 ##'
@@ -14,8 +17,13 @@
 ##' \donotrun{resim1 <- simulate_batch(G2e,10^3)}
 ##' 
 ##' @export
-simulate_batch <- function(G,runs){
-    maxsim <- rbindlist(mclapply(1:nrow(G),
+simulate_batch <- function(G,runs,use_mclapply2=FALSE){
+    mcla <- mclapply
+    if(use_mclapply2) {
+        require(bt88.03.704)
+        mcla <- mclapply2
+    }
+    maxsim <- rbindlist(mcla(1:nrow(G),
                                  function(i) {c(G[i,],
                                                 simVBIA(delta=G[i,]$delta,
                                                         sigma=G[i,]$sigma,
@@ -73,22 +81,6 @@ select_results <- function(maxsim,what,base_columns=c('delta','sigma','d','n1','
     rbindlist(lapply(what,select))
 }
 
-## select_mmeanbias <- function(maxsim){
-##     rbind(maxsim[,.SD[which.min(mean.bias)],by=n1,.SDcols=c('delta','sigma','d','n1','s','mean.bias')][,c("what.max","mean.bias"):=list("mean.bias",NULL)],
-##           maxsim[,.SD[which.min(uc.mean.bias)],by=n1,.SDcols=c('delta','sigma','d','n1','s','uc.mean.bias')][,c("what.max","uc.mean.bias"):=list("uc.mean.bias",NULL)])
-## }
-
-## select_mvarbias <- function(maxsim){
-##     rbind(maxsim[,.SD[which.min(variance.bias)],by=n1,.SDcols=c('delta','sigma','d','n1','s','mean.bias')][,c("what.max","variance.bias"):=list("variance.bias",NULL)],
-##           maxsim[,.SD[which.min(uc.variance.bias)],by=n1,.SDcols=c('delta','sigma','d','n1','s','uc.mean.bias')][,c("what.max","uc.variance.bias"):=list("uc.variance.bias",NULL)])
-## }
-
-## select_mncoverage <- function(maxsim){
-##     rbind(maxsim[,.SD[which.max(total.prob)],by=n1,.SDcols=c('delta','sigma','d','n1','s','mean.bias')][,c("what.max","total.prob"):=list("total.prob",NULL)],
-##           maxsim[,.SD[which.max(uc.total.prob)],by=n1,.SDcols=c('delta','sigma','d','n1','s','uc.mean.bias')][,c("what.max","uc.total.prob"):=list("uc.total.prob",NULL)])
-##     rbind(maxsim[,.SD[which.max(upper.prob)],by=n1,.SDcols=c('delta','sigma','d','n1','s','mean.bias')][,c("what.max","upper.prob"):=list("upper.prob",NULL)],
-##           maxsim[,.SD[which.max(uc.upper.prob)],by=n1,.SDcols=c('delta','sigma','d','n1','s','uc.mean.bias')][,c("what.max","uc.upper.prob"):=list("uc.upper.prob",NULL)])
-## }
 
 ##' Expand and refine parameter grid for simulation
 ##'
