@@ -2,6 +2,7 @@
 
 export(add_epsilon)
 export(cond.bias)
+export(coverage_sim)
 export(lowerBound)
 export(plotSim)
 export(plot_grid)
