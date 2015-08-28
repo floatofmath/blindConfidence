@@ -4,7 +4,8 @@
 \alias{coverage_sim}
 \title{coverage sim}
 \usage{
-coverage_sim(search = 10^4, resim = 10^6, use_mclapply2 = TRUE)
+coverage_sim(search = 10^4, resim = 10^6, use_mclapply2 = TRUE,
+  mem_factor = 16)
 }
 \arguments{
 \item{search}{number of simulation runs for the wide search}
@@ -12,6 +13,8 @@ coverage_sim(search = 10^4, resim = 10^6, use_mclapply2 = TRUE)
 \item{resim}{number of simulation runs for the resimulation of found maxima}
 
 \item{use_mclapply2}{use mclapply2 in simulations}
+
+\item{mem_factor}{number of cores that can handle 10^7 simulation runs, will be used to automatically determine the number of cores}
 }
 \value{
 dataframe with simulation results
