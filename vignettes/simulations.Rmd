@@ -581,7 +581,7 @@ previously simulations and simulate again.
 
 maxcoverageopt1 <- select_results(maxsim,c('total.prob','upper.prob','uc.total.prob','uc.upper.prob'),base_columns=c('n1','tn1','delta','sigma','d','s','total.prob','upper.prob'),functional=which.max)
 
-G2coverage <- add_epsilon(maxcoverageopt1,.05,.01,c('delta','sigma'))
+G2coverage <- add_epsilon(maxcoverageopt1,.2,.005,c('delta','sigma'))
 plot_grid(maxsim,maxcoverageopt1,G2coverage,'sigma')
 options(mc.cores=min(20,detectCores()-1))
 maxcoveragesim2 <- simulate_batch(G2coverage,4*10^5)
@@ -600,7 +600,7 @@ selection bias.
 
 ```{r,echo=F,results='hide'}
 data(maxcoveragesim)
-load('~/srv-home/resim_coveragenode5_150825.Rd')
+load('~/srv-home/resim_coveragenode4_150827-1410.Rd')
 
 
 
