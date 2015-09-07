@@ -1,6 +1,7 @@
 ##' run coverage sims 
 ##'
 ##' @title coverage sim
+##' @param base initial simulation across a grid to base the search on
 ##' @param search number of simulation runs for the wide search
 ##' @param resim number of simulation runs for the resimulation of found maxima
 ##' @param use_mclapply2 use mclapply2 in simulations
@@ -10,7 +11,7 @@
 ##' @return dataframe with simulation results
 ##' @author float
 ##' @export
-coverage_sim <- function(search=10^4,resim=10^6,use_mclapply2=TRUE,mem_factor=16,epsilon=.18,by=.06){
+coverage_sim <- function(base=maxsim,search=10^4,resim=10^6,use_mclapply2=TRUE,mem_factor=16,epsilon=.18,by=.06){
 ## Seperate file to run coverage simulations as they tend to crash the rstudio server
     library(parallel)
     ## devtools::install_github('floatofmath/blindConfidence')
@@ -22,7 +23,7 @@ coverage_sim <- function(search=10^4,resim=10^6,use_mclapply2=TRUE,mem_factor=16
     data(maxsim)
     maxsim$ylow <- 0
 
-    maxcoverageopt1 <- select_results(maxsim,c('total.prob','upper.prob','uc.total.prob','uc.upper.prob'),base_columns=c('n1','tn1','delta','sigma','d','s','total.prob','upper.prob'),functional=which.max)
+    maxcoverageopt1 <- select_results(base,c('total.prob','upper.prob','uc.total.prob','uc.upper.prob'),base_columns=c('n1','tn1','delta','sigma','d','s','total.prob','upper.prob'),functional=which.max)
 
     G2coverage <- add_epsilon(maxcoverageopt1,epsilon,by,c('delta','sigma'))
 ##plot_grid(maxsim,maxcoverageopt1,G2coverage,'sigma')
