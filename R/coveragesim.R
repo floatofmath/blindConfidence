@@ -23,9 +23,11 @@ coverage_sim <- function(base=maxsim,search=10^4,resim=10^6,use_mclapply2=TRUE,m
     data(maxsim)
     maxsim$ylow <- 0
 
-    maxcoverageopt1 <- select_results(base,c('total.prob','upper.prob','uc.total.prob','uc.upper.prob'),base_columns=c('n1','tn1','delta','sigma','d','s','total.prob','upper.prob'),functional=which.max)
+    maxcoverageopt1 <- select_results(base,c('total.prob','upper.prob','uc.total.prob','uc.upper.prob'),base_columns=c('n1','tn1','delta','sigma','d','s'),functional=which.max)
 
     G2coverage <- add_epsilon(maxcoverageopt1,epsilon,by,c('delta','sigma'))
+    ## remove duplicate scenarios
+    G2coverage <- G2coverage[!duplicated(G2coverage[,paste(delta,sigma,n1)]),]
 ##plot_grid(maxsim,maxcoverageopt1,G2coverage,'sigma')
     cat("Run search\n")
     s.cores <- floor(mem_factor* 10^7/search)
