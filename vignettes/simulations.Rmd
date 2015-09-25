@@ -600,9 +600,6 @@ selection bias.
 
 ```{r,echo=F,results='hide'}
 data(maxcoveragesim)
-load('~/srv-home/resim_coveragenode4_150907-1632.Rd')
-
-
 
 max.coverage2 <- ddply(maxcoveragesim3,"n1",transform,
                        max.twosided= -(total.prob-.05),

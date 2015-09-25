@@ -17,11 +17,17 @@
 ##' \donotrun{resim1 <- simulate_batch(G2e,10^3)}
 ##' 
 ##' @export
-simulate_batch <- function(G,runs,use_mclapply2=FALSE){
-    mcla <- mclapply
-    if(use_mclapply2) {
-        require(bt88.03.704)
-        mcla <- mclapply2
+simulate_batch <- function(G,runs,use_mclapply2=FALSE,multicore=TRUE){
+    if(multicore) {
+        require(parallel)
+        if(use_mclapply2) {
+            require(bt88.03.704)
+            mcla <- mclapply2
+        }
+        mcla <- mclapply
+    } 
+    if(!multicore) {
+        mcla  <-  lapply
     }
     maxsim <- rbindlist(mcla(1:nrow(G),
                                  function(i) {c(G[i,],
