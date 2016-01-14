@@ -144,3 +144,16 @@ plot_grid <- function(maxsim,G2s,G2e,what){
     
 
 
+smooth_criminal <- function(nominees,what){
+    nominees <- subset(nominees,what.max==what)
+    candidates <- list()
+    candidates$nominees$n1 <- nominees$n1
+    candidates$nominees$delta <- nominees$delta
+    candidates$nominees$sigma <- nominees$sigma
+    candidates$models <- list()
+    candidates$models$delta <- loess(delta~n1,data=nominees,subset={what.max=="total.prob"})
+    candidates$models$sigma <- loess(sigma~n1,data=nominees,subset={what.max=="total.prob"})
+    candidates$plx$delta <- predict(candidates$models$delta,se=T)
+    candidates$plx$sigma <- predict(candidates$models$sigma,se=T)
+    candidates
+}
