@@ -579,7 +579,7 @@ previously simulations and simulate again.
 ##                       uc.max.onesided.coverage.bias.sigma = sigma[which.max(uc.upper.prob)]
 ##                       )
 
-maxcoverageopt1 <- select_results(maxsim,c('total.prob','upper.prob','uc.total.prob','uc.upper.prob'),base_columns=c('n1','tn1','delta','sigma','d','s','total.prob','upper.prob'),functional=which.max)
+maxcoverageopt1 <- select_results(maxsim,c('total.prob','upper.prob','uc.total.prob','uc.upper.prob'),base_columns=c('n1','tn1','delta','sigma','d','s'),functional=which.max)
 
 G2coverage <- add_epsilon(maxcoverageopt1,.2,.005,c('delta','sigma'))
 plot_grid(maxsim,maxcoverageopt1,G2coverage,'sigma')

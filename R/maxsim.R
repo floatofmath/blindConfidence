@@ -20,11 +20,11 @@
 simulate_batch <- function(G,runs,use_mclapply2=FALSE,multicore=TRUE){
     if(multicore) {
         require(parallel)
+        mcla <- mclapply
         if(use_mclapply2) {
             require(bt88.03.704)
             mcla <- mclapply2
         }
-        mcla <- mclapply
     } 
     if(!multicore) {
         mcla  <-  lapply
