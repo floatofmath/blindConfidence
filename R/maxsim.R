@@ -29,16 +29,15 @@ simulate_batch <- function(G,runs,use_mclapply2=FALSE,multicore=TRUE){
     if(!multicore) {
         mcla  <-  lapply
     }
-    maxsim <- rbindlist(mcla(1:nrow(G),
+    args <- names(formals(simVBIA))
+    grid <- G[,names(G) %in% args]
+    maxsim <- rbindlist(mcla(1:nrow(grid),
                                  function(i) {c(G[i,],
-                                                simVBIA(delta=G[i,]$delta,
-                                                        sigma=G[i,]$sigma,
-                                                        d=G[i,]$d,
-                                                        n1=G[i,]$n1,
+                                                do.call('simVBIA',c(grid[i,],
                                                         cf=1,
                                                         runs=runs,
                                                         alpha=.025,
-                                                        beta=.2))}))
+                                                        beta=.2)))}))
     ## compute relative bias
     maxsim[,var.rbias:= variance.bias/sigma^2]
 
