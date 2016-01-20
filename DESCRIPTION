@@ -14,8 +14,7 @@ Suggests:
     parallel,
     knitr,
     bt88.03.704,
-    ggplot2 (>= 2.0.0),
-    testthat
+    ggplot2 (>= 2.0.0)
 Description: This package provides all code used to perform and
     summarize the simulation study shown in our paper "Estimation after
     blinded interim analysis". The code for the general simulations is
