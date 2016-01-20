@@ -6,6 +6,7 @@
 ##' @param G Object with paramter settings for \code{delta}, \code{sigma} and \code{n1} in each row 
 ##' @param runs Number of simulation runs 
 ##' @param use_mclapply2 use mclapply2 from package bt88.03.704 which implements a status bar (see details)
+##' @param multicore should multicore parallellization be used
 ##' @return Object with parameters and simulation results in each row
 ##' @author Florian Klinglmueller
 ##'
@@ -13,8 +14,8 @@
 ##' data(maxsim)
 ##' G2s <- select_results(maxsim,c('mean.bias'))
 ##' G2e <- add_epsilon(G2s,.05,.05,subset=c('delta','sigma'))
-##' \donotrun{plot_grid(maxsim,G2s,G2e,what='delta')}
-##' \donotrun{resim1 <- simulate_batch(G2e,10^3)}
+##' \dontrun{plot_grid(maxsim,G2s,G2e,what='delta')
+##' resim1 <- simulate_batch(G2e,10^3)}
 ##' 
 ##' @export
 simulate_batch <- function(G,runs,use_mclapply2=FALSE,multicore=TRUE){
@@ -133,6 +134,7 @@ add_epsilon <- function(G,epsilon,by,subset=colnames(G)){
 ##' @param maxsim Results of previous simulation
 ##' @param G2s Parameter values at which optimum occured
 ##' @param G2e Refined parameter grid
+##' @param what For which parameter to plot the grid
 ##' @author Florian Klinglmueller
 ##'
 ##' @export

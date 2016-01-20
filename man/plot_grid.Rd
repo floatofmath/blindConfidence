@@ -12,6 +12,8 @@ plot_grid(maxsim, G2s, G2e, what)
 \item{G2s}{Parameter values at which optimum occured}
 
 \item{G2e}{Refined parameter grid}
+
+\item{what}{For which parameter to plot the grid}
 }
 \description{
 Plot to compare different grids of parameter values

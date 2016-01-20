@@ -428,7 +428,7 @@ selection bias.
 
         
 ```{r,echo=F,results='hide'}
-data(maxmeansim)
+data(maxmeansim3)
 
 max.bias2 <- ddply(maxmeansim3,"n1",transform,
                   max.mean.bias= mean.bias,
@@ -502,7 +502,7 @@ selection bias.
 
 
 ```{r,echo=F,results='hide'}
-data(maxvariancesim)
+data(maxvariancesim3)
 
 max.varbias2 <- ddply(maxvariancesim3,"n1",transform,
                   max.variance.bias= variance.bias,
@@ -594,7 +594,7 @@ save(maxvariancesimRL3,file=fnameL)
 ```
 
 ```{r,echo=F,results='hide'}
-data(maxvariancesimd0sl)
+data(maxvariancesimRL3)
 
 max.varbias2 <- ddply(maxvariancesimRL3,"n1",transform,
                   max.variance.bias= variance.bias,
@@ -685,7 +685,7 @@ selection bias.
 
 
 ```{r,echo=F,results='hide'}
-data(maxcoveragesim)
+data(maxcoveragesim3)
 
 max.coverage2 <- ddply(maxcoveragesim3,"n1",transform,
                        max.twosided= -(total.prob-.05),

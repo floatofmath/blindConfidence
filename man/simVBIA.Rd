@@ -73,6 +73,6 @@ an interim estimate of the pooled variance that is adjusted
 based on the assumed effect size or the uncorrected lumped variance.
 }
 \examples{
-simVBIA_nodt(.5,1,1,n1=10,n2min=2,runs=1000)
+simVBIA(.5,1,1,n1=10,n2min=2,runs=1000)
 }
 

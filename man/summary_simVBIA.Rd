@@ -7,7 +7,7 @@
 summary_simVBIA(simresults)
 }
 \arguments{
-\item{sim}{result of \code{simVBIA} with option fulldata set to \code{TRUE}}
+\item{simresults}{result of \code{simVBIA} with option fulldata set to \code{TRUE}}
 }
 \value{
 summary statistics over simulation results

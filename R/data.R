@@ -22,7 +22,7 @@ NULL
 #' 
 #' @format A \code{data.frame}, each line corresponds to the outcome from
 #' one simulation run with $10^7$ simulated trials.
-#' @name maxvariancesimd0
+#' @name maxvariancesim3R
 NULL
 
 #' Simulation results from "Estimation after blinded interim analyses"
@@ -31,7 +31,7 @@ NULL
 #' 
 #' @format A \code{data.frame}, each line corresponds to the outcome from
 #' one simulation run with $10^8$ simulated trials.
-#' @name maxvariancesimd0sl
+#' @name maxvariancesimRL3
 NULL
 
 #' Maximum Bias Re-Simulations of mean estimates 
@@ -41,8 +41,9 @@ NULL
 #'
 #' @format A \code{data.frame}, each line corresponds to the outcome from
 #' one simulation run with $10^7$ simulated trials.
-#' @name maxmeansim
+#' @name maxmeansim3
 NULL
+
 
 #' Maximum Bias Re-Simulations of variance estimates 
 #' "Estimation after blinded interim analyses"
@@ -51,7 +52,7 @@ NULL
 #'
 #' @format A \code{data.frame}, each line corresponds to the outcome from
 #' one simulation run with $10^7$ simulated trials.
-#' @name maxvariancesim
+#' @name maxvariancesim3
 NULL
 
 #' Maximum Bias Re-Simulations of coverage estimates 
@@ -61,7 +62,7 @@ NULL
 #'
 #' @format A \code{data.frame}, each line corresponds to the outcome from
 #' one simulation run with $10^7$ simulated trials.
-#' @name maxcoveragesim
+#' @name maxcoveragesim3
 NULL
 
 

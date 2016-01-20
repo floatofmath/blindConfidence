@@ -88,7 +88,7 @@ zsd <- function(n1,d,v = 1/2,alpha,beta){
 #' @param cf correction term added to the sample size rule
 #' @template simvbia
 #' @examples
-#' simVBIA_nodt(.5,1,1,n1=10,n2min=2,runs=1000)
+#' simVBIA(.5,1,1,n1=10,n2min=2,runs=1000)
 #' @export
 simVBIA <- function(delta, # true effect size
                    sigma, # true standard deviation
@@ -104,7 +104,6 @@ simVBIA <- function(delta, # true effect size
                    fulldata = FALSE, #  
                    cf = 0
                    ){
-  require(data.table)
   ## pre-compute t-distribution quantiles
   qttable=qt(1-alpha,1:1000)
   xi=(qnorm(alpha,lower.tail=FALSE)+qnorm(beta,lower.tail=FALSE))^2/d^2
@@ -254,7 +253,7 @@ combine_simVBIA <- function(...){
 ##' Computes summary statistics for simulation results computed with \code{simVBIA}
 ##' 
 ##' @title Summarize simulation results
-##' @param sim result of \code{simVBIA} with option fulldata set to \code{TRUE}
+##' @param simresults result of \code{simVBIA} with option fulldata set to \code{TRUE}
 ##' @return summary statistics over simulation results
 ##' @template simvbia
 ##' @author float
