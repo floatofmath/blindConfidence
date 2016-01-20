@@ -213,18 +213,18 @@ in order to maximize the negative or positive bias, respectively.
 ```{r Bias_delta,results='hide',echo=F,warning=F}
 tupd.mean.bias <- ggplot(gridsim,mapping=aes(x=delta,y=mean.bias)) +
     geom_path(lty=2) + geom_line(y=0,colour='gray') +
-    geom_path(aes(y=m.bias),lty=3,col='red',subset=.(m.bias<=0.2 & n1 == 2)) +
-    geom_path(aes(y=m.bias.n),lty=3,col='red',subset=.(m.bias.n>=-0.2 & n1 == 2)) +
-    geom_path(aes(y=m.bias),lty=3,col='red',subset=.(m.bias<=0.1 & n1 == 8)) +
-    geom_path(aes(y=m.bias.n),lty=3,col='red',subset=.(m.bias.n>=-0.1 & n1 == 8)) +
-    geom_path(aes(y=m.bias),lty=3,col='red',subset=.(m.bias<=0.1 & n1 == 18)) +
-    geom_path(aes(y=m.bias.n),lty=3,col='red',subset=.(m.bias.n>=-0.1 & n1 == 18)) +
-    geom_path(aes(y=m.bias),lty=3,col='red',subset=.(m.bias<=0.1 & n1 == 32)) +
-    geom_path(aes(y=m.bias.n),lty=3,col='red',subset=.(m.bias.n>=-0.1 & n1 == 32)) +
+    geom_path(aes(y=m.bias),lty=3,col='red',data=subset(gridsim,m.bias<=0.2 & n1 == 2)) +
+    geom_path(aes(y=m.bias.n),lty=3,col='red',data=subset(gridsim,m.bias.n>=-0.2 & n1 == 2)) +
+    geom_path(aes(y=m.bias),lty=3,col='red',data=subset(gridsim,m.bias<=0.1 & n1 == 8)) +
+    geom_path(aes(y=m.bias.n),lty=3,col='red',data=subset(gridsim,m.bias.n>=-0.1 & n1 == 8)) +
+    geom_path(aes(y=m.bias),lty=3,col='red',data=subset(gridsim,m.bias<=0.1 & n1 == 18)) +
+    geom_path(aes(y=m.bias.n),lty=3,col='red',data=subset(gridsim,m.bias.n>=-0.1 & n1 == 18)) +
+    geom_path(aes(y=m.bias),lty=3,col='red',data=subset(gridsim,m.bias<=0.1 & n1 == 32)) +
+    geom_path(aes(y=m.bias.n),lty=3,col='red',data=subset(gridsim,m.bias.n>=-0.1 & n1 == 32)) +
 
     geom_path(aes(y=uc.mean.bias),lty=1) +
-    geom_path(aes(y=brannath),lty=3,col='darkgreen',subset=.(brannath <= 0.1)) +
-    geom_path(aes(y=-brannath),lty=3,col='darkgreen',subset=.(brannath <= 0.1)) +
+    geom_path(aes(y=brannath),lty=3,col='darkgreen',data=subset(gridsim,brannath <= 0.1)) +
+    geom_path(aes(y=-brannath),lty=3,col='darkgreen',data=subset(gridsim,brannath <= 0.1)) +
         
     facet_grid(s~sigma,labeller=lverbose) + theme_bw() +
     xlab(expression(delta)) + ylab('Bias of the mean') #+ ylim(-.4,.4)
@@ -288,17 +288,7 @@ tupd.vm.bias <- ggplot(gridsim,mapping=aes(x=delta,y=vm)) +geom_line(lty=1) +
     facet_grid(s~sigma,labeller=lverbose) + theme_bw() + geom_blank(aes(x=delta,y=ylow)) +
     xlab(expression(delta)) + ylab('Variance of the mean estimate')
 
-tupd.why.infl <- ggplot(gridsim,mapping=aes(x=delta,y=vm-ev)) +geom_line(lty=2) +
-    geom_path(aes(y=mean.bias),lty=3) +     geom_path(aes(y=(.025-upper.prob)),lty=1) + geom_path(aes(y=(.025-lower.prob)),lty=1,col='green') + geom_path(aes(y=(.05-total.prob)),col='red',lty=1) +  geom_hline(v=0,col='grey') +
-    facet_grid(s~sigma,labeller=lverbose) + theme_bw() + geom_blank(aes(x=delta,y=ylow)) +
-    xlab(expression(delta)) + ylab('Variance of the mean estimate')
-
 print(tupd.vm.bias)
-## print(tupd.why.infl)
-
-## pdf('/tmp/why_inflation.pdf')
-## print(tupd.why.infl)
-## dev.off()
 
 ```
 
@@ -552,9 +542,105 @@ vplot <- ggplot(dfa,aes(n1,value))+
     facet_grid(variable~method,scale='free_y',labeller=lverbose) +xlab(expression(n[1]))+ylab('')+theme_bw()+xlim(c(2,50))
 print(vplot)
 
+```
+
+It appears that the absolute variance bias (using both sample size
+rules) is maximised for $\delta=0$. Above figure shows that in the
+simulation study the maximum is consistenly attained for $\delta$
+close to zero. Consequently we rerun the simulation restricting
+$\delta$ to a fixed value of zero. Also for the unadjusted
+reassessment rule, values of $\sigma$ that maximise the absolute
+variance bias are consistently found at the upper border of the
+simulation grid. It appears that the maximum is obtained for large
+values of $\sigma$. Consequently we ran a simulation setting $\delta$
+to zero and $\sigma$ to 50. This increased the variance of the
+estimated bias quite a bit so that the number of simulation runs had
+to be increased to $10^8$ per scenario to get sufficently smooth
+results. The results of this simulation are shown in the following
+figure. Note that for the unadjusted rule the estimated maximum
+absolute bias is practically equal to the theoretical bound derived in
+Theorem ??. 
+
+```{r restrictedVarianceSimulation,eval=F}
+maxvarianceoptR1 <- select_results(subset(maxsim,delta==0),c('variance.bias','uc.variance.bias'),base_columns=c('n1','tn1','delta','sigma','d','s'))
+
+
+G2varianceR <- add_epsilon(maxvarianceoptR1,.1,.01,c('sigma'))
+plot_grid(maxsim,maxvarianceoptR1,G2varianceR,'sigma')
+options(mc.cores=min(20,detectCores()-1))
+maxvariancesimR2 <- simulate_batch(G2varianceR,10^7,use=T)
+## reshape and resim
+maxvarianceoptR2 <- select_results(maxvariancesimR2,c('variance.bias','uc.variance.bias'),base_columns=c('n1','tn1','delta','sigma','d','s'))
+
+## simulate with delta set to zero!
+## this will not be plotte if you want to plot it
+## modify the code below
+plot_grid(G2varianceR,maxvarianceoptR1,maxvarianceoptR2,'delta')
+maxvariancesimR3 <- simulate_batch(maxvarianceoptR2,10^7)
+fname <- paste('resim_variance_d0',Sys.info()['nodename'],'_',format(Sys.time(),"%y%m%d"),'.Rd',sep='')
+save(maxvariancesimR3,file=fname)
+
+## simulate with delta = 0, and large sigma=50, we need to up the sim runs this takes up quite a bit of ram! 
+## this will not be plotte if you want to plot it
+## modify the code below
+options(mc.cores=min(2,detectCores()-1))
+maxvarianceoptRL2 <- maxvarianceoptR2
+maxvarianceoptRL2[what.max=='uc.variance.bias',sigma:=50]
+maxvariancesimRL3 <- simulate_batch(maxvarianceoptRL2,10^8,use=T)
+fnameL <- paste('resim_variance_d0sl',Sys.info()['nodename'],'_',format(Sys.time(),"%y%m%d"),'.Rd',sep='')
+save(maxvariancesimRL3,file=fnameL)
 
 
 ```
+
+```{r,echo=F,results='hide'}
+data(maxvariancesimd0sl)
+
+max.varbias2 <- ddply(maxvariancesimRL3,"n1",transform,
+                  max.variance.bias= variance.bias,
+                  uc.max.variance.bias= uc.variance.bias,
+                      method=c("variance.bias"="adjusted","uc.variance.bias"="unadjusted")[what.max],
+                  theoretical = bound
+                  )
+
+max.varbias2 <- max.varbias2[,c('method','n1','delta','sigma','max.variance.bias','uc.max.variance.bias','theoretical')]
+```
+
+
+```{r maxVarbiasR,echo=F,fig.width=4,fig.height=5}
+
+df <- melt(max.varbias2,id=c('n1','method','theoretical'))
+df <- subset(df,!(method=='adjusted' & variable == 'uc.max.variance.bias'))
+df <- subset(df,!(method=='unadjusted' & variable == 'max.variance.bias'))
+
+df <- within(df,scale <- c("absolute","relative")[grepl("rel",variable)+1])
+df <- within(df,variable <- sub("rel\\.","",variable))
+df <- within(df,variable <- sub("uc\\.","",variable))
+df <- df[df$variable %in% c('max.variance.bias','delta','sigma'),]
+df <- within(df,variable <- factor(variable))
+df <- within(df,variable <- revalue(variable,c('max.variance.bias'='str_mvb')))
+df <- within(df,variable <- relevel(variable,'delta'))
+df <- within(df,variable <- relevel(variable,'str_mvb'))
+df <- within(df,method <- relevel(method,'unadjusted'))
+
+
+dfa <- df[df$scale=="absolute",]#"relative",]#
+scalehelper <- data.frame(n1=rep(-10,3),variable=factor(1:3,label=c("str_mvb",expression(delta),expression(sigma))),value=rep(0,3),scale=rep("absolute",3),method=rep("adjusted",3),theoretical=3)
+dfa <- rbind(dfa,scalehelper)
+
+vplot <- ggplot(dfa,aes(n1,value))+
+    geom_line(aes(n1,-value),data=subset(dfa,variable=="str_mvb")) + geom_line(aes(n1,-theoretical),data=subset(dfa,variable=="str_mvb" & method=='unadjusted'),linetype='dotted') + 
+    geom_smooth(data=subset(dfa,variable==levels(variable)[3])) + geom_point(data=subset(dfa,variable!="str_mvb"),size=1) + geom_smooth(data=subset(dfa,variable==levels(variable)[2])) +
+    facet_grid(variable~method,scale='free_y',labeller=lverbose) +xlab(expression(n[1]))+ylab('')+theme_bw()+xlim(c(2,50))
+print(vplot)
+
+```
+
+For the unadjusted rule one may also suspect that the maximum absolute
+variance bias is attained for $\sigma \rightarrow \Infty$. The results
+of a simulation study where we set $\sigma=10$ (data not shown),
+however, showed consistenly lower maximum values; therefore did not
+support this theory. 
 
 ### Maximum difference between nominal and actual coverage probability
 
