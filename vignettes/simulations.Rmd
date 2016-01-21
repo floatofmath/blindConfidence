@@ -182,10 +182,13 @@ print(tupd)
 
 ```
 
+
 ### Unadjusted interim variance estimate
+
 
 Then also for designs that use the unadjusted lumped variance at
 interim.
+
 
 ```{r CPnU,results='hide',echo=F,warning=F}
 
@@ -200,7 +203,9 @@ print(tupd.uc)
 
 ```
 
+
 ## Bias of the effect size estimate
+
 
 Next we look at estimates of the mean difference between treatment
 groups. Solid lines show the mean bias for designs where sample sizes
@@ -229,9 +234,12 @@ tupd.mean.bias <- ggplot(gridsim,mapping=aes(x=delta,y=mean.bias)) +
     facet_grid(s~sigma,labeller=lverbose) + theme_bw() +
     xlab(expression(delta)) + ylab('Bias of the mean') #+ ylim(-.4,.4)
 print(tupd.mean.bias)
+
 ```
 
+
 ## Bias of the variance estimate
+
 
 Next we look at variance estimates. 
 
@@ -244,7 +252,9 @@ tupd.var.bias <- ggplot(gridsim,mapping=aes(x=delta,y=variance.bias)) +
 print(tupd.var.bias)
 ```
 
+
 ## Estimates of the variance of the mean estimate (square standard error)
+
 
 In each simulated trial we estimated the standard error of the mean,
 and compute the standard error of a fixed sample trial with the same
@@ -290,9 +300,14 @@ tupd.vm.bias <- ggplot(gridsim,mapping=aes(x=delta,y=vm)) +geom_line(lty=1) +
 
 print(tupd.vm.bias)
 
+
 ```
 
+
+
 ### Unadjusted interim variance estimate
+
+
 
 ```{r Standard_errors_nU,results='hide',echo=F,warning=F}
 
@@ -629,9 +644,13 @@ scalehelper <- data.frame(n1=rep(-10,3),variable=factor(1:3,label=c("str_mvb",ex
 dfa <- rbind(dfa,scalehelper)
 
 vplot <- ggplot(dfa,aes(n1,value))+
-    geom_line(aes(n1,-value),data=subset(dfa,variable=="str_mvb")) + geom_line(aes(n1,-theoretical),data=subset(dfa,variable=="str_mvb" & method=='unadjusted'),linetype='dotted') + 
-    geom_smooth(data=subset(dfa,variable==levels(variable)[3])) + geom_point(data=subset(dfa,variable!="str_mvb"),size=1) + geom_smooth(data=subset(dfa,variable==levels(variable)[2])) +
-    facet_grid(variable~method,scale='free_y',labeller=lverbose) +xlab(expression(n[1]))+ylab('')+theme_bw()+xlim(c(2,50))
+    geom_line(aes(n1,-value),data=subset(dfa,variable=="str_mvb")) + geom_line(aes(n1,-theoretical),data=subset(dfa,variable=="str_mvb" & method=='unadjusted'),linetype='dotted') +
+        geom_point(data=subset(dfa,variable==levels(variable)[2]),size=1) +
+            geom_point(data=subset(dfa,variable==levels(variable)[3] & value < 4),size=1) +
+                geom_smooth(data=subset(dfa,variable==levels(variable)[3] & value <4)) +
+                    geom_text(label="paste(sigma,'=',50)",parse=T,data=data.frame(n1=25,method="unadjusted",variable="sigma",value=1.25),size=18) +
+                geom_line(data=subset(dfa,variable==levels(variable)[2])) +
+    facet_grid(variable~method,scale='free',labeller=lverbose) +xlab(expression(n[1]))+ylab('')+theme_bw()+xlim(c(2,50))
 print(vplot)
 
 ```
