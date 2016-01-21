@@ -403,7 +403,7 @@ maxsim$ylow <- 0
 
 ```{r plot labeller,results='hide',include=F,echo=F}
                                         #This little function takes care of annotating the plots.
-lverbose  <- function(labels,from=c("anc","mmb","mvb"),to=c("actual - nominal coverage [%]","maximum mean bias","absolute bias"),multi_line=TRUE){
+lverbose  <- function(labels,from=c("anc","mmb","mvb"),to=c("non-coverage [%]","max. mean bias","abs. variance bias"),multi_line=TRUE){
     str_labels <- label_value(labels,multi_line)
     par_labels <- label_parsed(labels,multi_line)
     strings <- grep("str_",str_labels[[1]])
@@ -479,7 +479,7 @@ dfa <- rbind(dfa,scalehelper)
                                                                                       
 mplot <- ggplot(dfa)+
     geom_line(aes(n1,-value),data=subset(dfa,variable=="str_mmb")) +
-    geom_smooth(aes(n1,value),data=subset(dfa,variable!="str_mmb")) + geom_point(aes(n1,value),data=subset(dfa,variable!="str_mmb"),size=1) +
+    geom_smooth(aes(n1,value),data=subset(dfa,variable!="str_mmb")) + geom_point(aes(n1,value),data=subset(dfa,variable!="str_mmb"),size=.2) +
     facet_grid(variable~method,scale='free_y',labeller=lverbose) +xlab(expression(n[1]))+ylab('')+theme_bw()+xlim(c(2,50))
     
 print(mplot)
@@ -553,7 +553,7 @@ dfa <- rbind(dfa,scalehelper)
 
 vplot <- ggplot(dfa,aes(n1,value))+
     geom_line(aes(n1,-value),data=subset(dfa,variable=="str_mvb")) + geom_line(aes(n1,-theoretical),data=subset(dfa,variable=="str_mvb" & method=='unadjusted'),linetype='dotted') + 
-    geom_smooth(data=subset(dfa,variable==levels(variable)[3])) + geom_point(data=subset(dfa,variable!="str_mvb"),size=1) + geom_smooth(data=subset(dfa,variable==levels(variable)[2])) +
+    geom_smooth(data=subset(dfa,variable==levels(variable)[3])) + geom_point(data=subset(dfa,variable!="str_mvb"),size=.2) + geom_smooth(data=subset(dfa,variable==levels(variable)[2])) +
     facet_grid(variable~method,scale='free_y',labeller=lverbose) +xlab(expression(n[1]))+ylab('')+theme_bw()+xlim(c(2,50))
 print(vplot)
 
@@ -645,21 +645,16 @@ dfa <- rbind(dfa,scalehelper)
 
 vplot <- ggplot(dfa,aes(n1,value))+
     geom_line(aes(n1,-value),data=subset(dfa,variable=="str_mvb")) + geom_line(aes(n1,-theoretical),data=subset(dfa,variable=="str_mvb" & method=='unadjusted'),linetype='dotted') +
-        geom_point(data=subset(dfa,variable==levels(variable)[2]),size=1) +
-            geom_point(data=subset(dfa,variable==levels(variable)[3] & value < 4),size=1) +
+        geom_point(data=subset(dfa,variable==levels(variable)[2]),size=.2) +
+            geom_point(data=subset(dfa,variable==levels(variable)[3] & value < 4),size=.2) +
                 geom_smooth(data=subset(dfa,variable==levels(variable)[3] & value <4)) +
-                    geom_text(label="paste(sigma,'=',50)",parse=T,data=data.frame(n1=25,method="unadjusted",variable="sigma",value=1.25),size=18) +
+                    geom_text(label="paste(sigma,'=',50)",parse=T,data=data.frame(n1=25,method="unadjusted",variable="sigma",value=1.25),size=8) +
                 geom_line(data=subset(dfa,variable==levels(variable)[2])) +
     facet_grid(variable~method,scale='free',labeller=lverbose) +xlab(expression(n[1]))+ylab('')+theme_bw()+xlim(c(2,50))
 print(vplot)
 
 ```
 
-For the unadjusted rule one may also suspect that the maximum absolute
-variance bias is attained for $\sigma \rightarrow \Infty$. The results
-of a simulation study where we set $\sigma=10$ (data not shown),
-however, showed consistenly lower maximum values; therefore did not
-support this theory. 
 
 ### Maximum difference between nominal and actual coverage probability
 
@@ -744,7 +739,7 @@ dfa <- rbind(dfa,scalehelper)
 cplot <- ggplot(dfa) +
     geom_line(aes(n1,100*value,linetype=side,shape=side),data=subset(dfa,variable=="str_anc")) +
         geom_smooth(aes(n1,value),data=subset(dfa,variable!="str_anc")) +
-            geom_point(aes(n1,value,shape=side),data=subset(dfa,variable!="str_anc"),size=1.5) +
+            geom_point(aes(n1,value,shape=side),data=subset(dfa,variable!="str_anc"),size=.5) +
                 facet_grid(variable~method,scale='free_y',labeller=lverbose)+xlab(expression(n[1]))+ylab('')+theme_bw()+xlim(c(2,50))
 
 
@@ -759,8 +754,12 @@ print(cplot)
 
 ```{r export figures,eval=F,echo=F,results='hide',include=F}
 library(bt88.03.704)
+
+mplot <- mplot+theme(strip.text.y = element_text(size=rel(.8)),axis.text=element_text(size=rel(.6)),plot.margin=unit(c(.7,-.2,-.2,-1),'lines'))
+vplot <- vplot+theme(strip.text.y = element_text(size=rel(.8)),axis.text=element_text(size=rel(.6)),plot.margin=unit(c(.7,-.2,-.2,-1),'lines'))
+cplot <- cplot+theme(strip.text.y = element_text(size=rel(.8)),axis.text=element_text(size=rel(.6)),plot.margin=unit(c(.7,-1,-.2,-1),'lines'),legend.text=element_text(size=rel(.6)))
 setwd('~/Dropbox/msi/2013/research/blind_confidence/rssversion/graphs/')
-cairo_ps('blinded-max.eps',width=11,height=4.4,pointsize=8)
+cairo_ps('blinded-max.eps',width=8.5,height=4.4,pointsize=8)
 multiplot(mplot,vplot,cplot,cols=3,widths=unit(c(.3,.3,.4),'npc'),titles = c("Mean bias","Variance bias","Actual - nominal coverage"))
 dev.off()
 
