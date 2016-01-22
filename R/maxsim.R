@@ -31,7 +31,7 @@ simulate_batch <- function(G,runs,use_mclapply2=FALSE,multicore=TRUE){
         mcla  <-  lapply
     }
     args <- names(formals(simVBIA))
-    grid <- G[,names(G) %in% args]
+    grid <- G[,names(G) %in% args,with=F]
     maxsim <- rbindlist(mcla(1:nrow(grid),
                                  function(i) {c(G[i,],
                                                 do.call('simVBIA',c(grid[i,],

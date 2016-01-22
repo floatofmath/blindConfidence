@@ -1,6 +1,6 @@
 ---
 title: "Estimation after blinded interim analysis"
-subtitle: "Numerical results"
+subtitle: "Supplementary Web Materials: Numerical results"
 author: Florian Klinglmueller
 output: rmarkdown::html_vignette
 vignette: >
@@ -13,17 +13,21 @@ vignette: >
 knitr::opts_chunk$set(echo=FALSE,warning=FALSE,results='hide',fig.width=7,fig.height=7,message=FALSE)
 ```
 
-This vignette presents the numerical results of the article
-``Estimation after blinded interim analysis''. Simply compiling the
-Rmarkdown file using *knitr* will recompute all figures using stored
-simulation results. To rerun the simulations the corresponding R
-chunks can be reconfigured so that they will be evaluated on
-compilation. Note that this may take a very long time and require
-considerable amount of main memory. Computation of the publication
-results took about 6 hours on a simulation server using 10 processor
-cores and (more importantly) 64 GB of shared memory. Note that the
-code has been optimized to run on Linux, so while the package should
-work fine on Windows in theory, it has not been tested.
+This document presents the numerical results of the article
+``Estimation after blinded interim analysis''. It is also provided as
+a vignette to the r-package *blindConfidence*. Therefore, all results
+shown in the paper as well as in this document can be replicated by
+compiling the corresponding source file in the package. Simply
+compiling the document - as happens on installation of the package -
+will recompute all figures using stored simulation results. To rerun
+the simulations the corresponding R chunks can be reconfigured so that
+they will be evaluated on compilation. Note that this may take a very
+long time and require a considerable amount of main memory. Computation
+of the publication results took over two weeks on a simulation
+server using multiple processor cores and (more importantly) 64 GB of
+shared memory. Note that the code has been optimized to run on Linux,
+so while the package should work fine on Windows in theory, it has not
+been tested. 
 
 # Coverage probabilities and bias of the mean and variance estimates
 
@@ -437,9 +441,8 @@ save(maxmeansim3,file=fname)
 
 ```
 
-Finally we select maximum bias values and resimulate to avoid
-selection bias.
-
+Finally we selected the maximal values of the bias and resimulate to
+any selection bias.
 
         
 ```{r,echo=F,results='hide'}
@@ -562,35 +565,44 @@ print(vplot)
 It appears that the absolute variance bias (using both sample size
 rules) is maximised for $\delta=0$. Above figure shows that in the
 simulation study the maximum is consistenly attained for $\delta$
-close to zero. Consequently we rerun the simulation restricting
-$\delta$ to a fixed value of zero. Also for the unadjusted
-reassessment rule, values of $\sigma$ that maximise the absolute
-variance bias are consistently found at the upper border of the
-simulation grid. It appears that the maximum is obtained for large
-values of $\sigma$. Consequently we ran a simulation setting $\delta$
-to zero and $\sigma$ to 50. This increased the variance of the
-estimated bias quite a bit so that the number of simulation runs had
+close to zero.  Also for the unadjusted reassessment rule, values of
+$\sigma$ that maximise the absolute variance bias are consistently
+found at the upper border of the simulation grid. It appears that the
+maximum is obtained for large values of $\sigma$. Consequently we
+additionally ran the following simulations:
+1. Maximize the absolute variance bias using a fixed value of
+   $\delta=0$, and values of $\sigma$ ranging from $0.5$ to $4$
+2. Estimate the absolute variance using simulations setting $\delta=0$
+   and $\sigma=4$ (i.e. at the border of the chosen parameter grid)
+3. Estimate the absolute variance using simulations setting $\delta=0$
+   and $\sigma=50$ (i.e. approaching $\Infty$)
+
+Especially, setting $\sigma=50$ increased the variance of the
+estimated bias quite a bit so that the number of simulation runs had 
 to be increased to $10^8$ per scenario to get sufficently smooth
-results. The results of this simulation are shown in the following
-figure. Note that for the unadjusted rule the estimated maximum
-absolute bias is practically equal to the theoretical bound derived in
-Theorem ??. 
+results. The results of these simulations are shown and compared in
+the following figure.
+
+
+
+
 
 ```{r restrictedVarianceSimulation,eval=F}
+
 maxvarianceoptR1 <- select_results(subset(maxsim,delta==0),c('variance.bias','uc.variance.bias'),base_columns=c('n1','tn1','delta','sigma','d','s'))
 
 
 G2varianceR <- add_epsilon(maxvarianceoptR1,.1,.01,c('sigma'))
 plot_grid(maxsim,maxvarianceoptR1,G2varianceR,'sigma')
 options(mc.cores=min(20,detectCores()-1))
-maxvariancesimR2 <- simulate_batch(G2varianceR,10^7,use=T)
+maxvariancesimR2 <- simulate_batch(data.frame(G2varianceR),10^7,use=T)
 ## reshape and resim
 maxvarianceoptR2 <- select_results(maxvariancesimR2,c('variance.bias','uc.variance.bias'),base_columns=c('n1','tn1','delta','sigma','d','s'))
 
 ## simulate with delta set to zero!
 ## this will not be plotte if you want to plot it
 ## modify the code below
-plot_grid(G2varianceR,maxvarianceoptR1,maxvarianceoptR2,'delta')
+plot_grid(G2varianceR,maxvarianceoptR1,maxvarianceoptR2,'sigma')
 maxvariancesimR3 <- simulate_batch(maxvarianceoptR2,10^7)
 fname <- paste('resim_variance_d0',Sys.info()['nodename'],'_',format(Sys.time(),"%y%m%d"),'.Rd',sep='')
 save(maxvariancesimR3,file=fname)
@@ -605,13 +617,110 @@ maxvariancesimRL3 <- simulate_batch(maxvarianceoptRL2,10^8,use=T)
 fnameL <- paste('resim_variance_d0sl',Sys.info()['nodename'],'_',format(Sys.time(),"%y%m%d"),'.Rd',sep='')
 save(maxvariancesimRL3,file=fnameL)
 
+## simulate with delta = 0, and large sigma=50, we need to up the sim runs this takes up quite a bit of ram! 
+## this will not be plotte if you want to plot it
+## modify the code below
+options(mc.cores=min(2,detectCores()-1))
+maxvarianceoptR502 <- maxvarianceoptR2
+maxvarianceoptR502[,sigma:=50]
+maxvariancesimR503 <- simulate_batch(data.frame(maxvarianceoptR502),10^8,use=T)
+fnameL <- paste('resim_variance_d0s50',Sys.info()['nodename'],'_',format(Sys.time(),"%y%m%d"),'.Rd',sep='')
+save(maxvariancesimR503,file=fnameL)
+
+## simulate with delta = 0, and large sigma=50, we need to up the sim runs this takes up quite a bit of ram! 
+## this will not be plotte if you want to plot it
+## modify the code below
+options(mc.cores=min(2,detectCores()-1))
+maxvarianceoptR42 <- maxvarianceoptR2
+maxvarianceoptR42[,sigma:=4]
+maxvariancesimR43 <- simulate_batch(data.frame(maxvarianceoptR42),10^8,use=T)
+fnameL <- paste('resim_variance_d0s4',Sys.info()['nodename'],'_',format(Sys.time(),"%y%m%d"),'.Rd',sep='')
+save(maxvariancesimR43,file=fnameL)
+```
+
+### Comparison of simulated optima for the unadjusted reassessment rule
+
+
+First we show that setting $\delta = 0$ does not decrease the absolute
+variance bias compared to the maximum values found when $\delta$ was allowed
+to range from $0$ to $4$.
+
+```{r,fig.cap="Comparison of maximal absolute variance bias for different parameter settings: Solid line - $\delta=0$, $\sigma \in [.5,4]$; Dashed line - $\delta \in [0,4]$, $\sigma=[.5,4]$; transparent red line - theoretical bound."}
+data(maxvariancesimR3)
+data(maxvariancesimR43)
+data(maxvariancesimRL3)
+data(maxvariancesimR503)
+
+
+ggplot(subset(maxvariancesimR3,what.max=='uc.variance.bias'),aes(n1,-uc.variance.bias))+geom_line()+
+    geom_line(data=subset(maxvariancesim3,what.max=='uc.variance.bias'),linetype=2) +
+        geom_line(data=subset(maxvariancesim3,what.max=='uc.variance.bias'),aes(n1,-bound),col='red',size=3,alpha=.5)
 
 ```
 
-```{r,echo=F,results='hide'}
-data(maxvariancesimRL3)
+Next we show that setting $\delta = 0$ and $\sigma = 50$ increases the
+absolute variance bias compared to the maximum values found when
+$\delta=0$ and $\sigma$ ranged from $.5$ to $4$. Additionally we show
+that setting $\sigma=4$ does increase the bias compared to the
+maximum values found when $\delta=0$ and $\sigma$ ranged from $.5$ to
+$4$, but not as much as for $\sigma=50$. 
 
-max.varbias2 <- ddply(maxvariancesimRL3,"n1",transform,
+
+
+```{r compare_maxvarbiases_1,echo=F,fig.cap="Comparison of maximal absolute variance bias for different parameter settings: Solid line - $\delta=0$, $\sigma=50$; Dashed line - $\delta=0$, $\sigma=4$; Dotted line $\delta=0, $\sigma \in [.5,4]$; transparent red line - theoretical bound."}
+ggplot(subset(maxvariancesimRL3,what.max=='uc.variance.bias'),aes(n1,-uc.variance.bias))+geom_line()+
+    geom_line(data=subset(maxvariancesimR43,what.max=='uc.variance.bias'),linetype=2) +
+            geom_line(data=subset(maxvariancesimR3,what.max=='uc.variance.bias'),linetype=3) +
+            geom_line(data=subset(maxvariancesim3,what.max=='uc.variance.bias'),aes(n1,-bound),col='red',size=3,alpha=.5)
+``` 
+
+### Comparison of simulated optima for the adjusted reassessment rule
+
+First we show that setting $\delta = 0$ does not decrease the absolute
+variance bias compared to the maximum values found when $\delta$ was allowed
+to range from $0$ to $4$.
+
+
+```{r,echo=F,fig.cap="Comparison of maximal absolute variance bias for different parameter settings: Solid line - $\delta=0$, $\sigma \in [.5,4]$; Dashed line - $\delta \in [0,4]$, $\sigma=[.5,4]$."}
+ggplot(subset(maxvariancesimRL3,what.max=='variance.bias'),aes(n1,-variance.bias))+geom_line()+
+    geom_line(data=subset(maxvariancesim3,what.max=='variance.bias'),linetype=2)
+```
+
+Finally, we show that, for the adjusted sample size rule, setting
+$\delta = 0$ and $\sigma = 50$ decreases the absolute variance bias
+compared to the maximum values found when $\delta=0$ and $\sigma$
+ranged from $.5$ to $4$; and also, that setting $\sigma=4$ does
+decrease the bias compared to the maximum values found when $\delta=0$
+and $\sigma$ ranged from $.5$ to $4$, but not as much as for
+$\sigma=50$.
+
+
+```{r  compare_maxvarbiases_2,echo=F,fig.cap="Comparison of maximal absolute variance bias for different parameter settings: Solid line - $\delta=0$, $\sigma=50$; Dashed line - $\delta=0$, $\sigma=4$; Dotted line $\delta=0, $\sigma \in [.5,4]$."}
+ggplot(subset(maxvariancesimRL3,what.max=='variance.bias'),aes(n1,-variance.bias))+geom_line(linetype=3)+
+    geom_line(data=subset(maxvariancesimR43,what.max=='variance.bias'),linetype=2)+
+        geom_line(data=subset(maxvariancesimR503,what.max=='variance.bias'),linetype=1)
+```
+
+### Final results included in the paper
+
+
+Based on above results we concluded to present the results that show
+the maximum absolute variance bias for $\delta=0$ and $\sigma$ ranging
+from $.5$ to $4$ - when using the adjusted sample size rule; and
+$\delta = 0$ and $\sigma=4$ - when using the unadjusted sample size
+rule. Even though not a global maximum we opted for the latter
+scenario as it reflects the maximum absolute variance bias within a
+range of parameters that seem of practical concern. 
+
+
+```{r,echo=F,results='hide'}
+set(maxvariancesimR3,j=which(duplicated(names(maxvariancesimR3))),value=NULL)
+set(maxvariancesimR43,j=which(duplicated(names(maxvariancesimR43))),value=NULL)
+set(maxvariancesimRL3,j=which(duplicated(names(maxvariancesimRL3))),value=NULL)
+
+maxvariancesimR43[what.max=='variance.bias',] <- maxvariancesimRL3[what.max=='variance.bias',]
+
+max.varbias2 <- ddply(maxvariancesimR43,"n1",transform,
                   max.variance.bias= variance.bias,
                   uc.max.variance.bias= uc.variance.bias,
                       method=c("variance.bias"="adjusted","uc.variance.bias"="unadjusted")[what.max],
@@ -644,12 +753,12 @@ scalehelper <- data.frame(n1=rep(-10,3),variable=factor(1:3,label=c("str_mvb",ex
 dfa <- rbind(dfa,scalehelper)
 
 vplot <- ggplot(dfa,aes(n1,value))+
-    geom_line(aes(n1,-value),data=subset(dfa,variable=="str_mvb")) + geom_line(aes(n1,-theoretical),data=subset(dfa,variable=="str_mvb" & method=='unadjusted'),linetype='dotted') +
+    geom_line(aes(n1,-value),data=subset(dfa,variable=="str_mvb")) + geom_line(aes(n1,-theoretical),data=subset(dfa,variable=="str_mvb" & method=='unadjusted'),size=1.5,alpha=.2) +
         geom_point(data=subset(dfa,variable==levels(variable)[2]),size=.2) +
-            geom_point(data=subset(dfa,variable==levels(variable)[3] & value < 4),size=.2) +
+            geom_point(data=subset(dfa,variable==levels(variable)[3] & value < 5),size=.2) +
                 geom_smooth(data=subset(dfa,variable==levels(variable)[3] & value <4)) +
-                    geom_text(label="paste(sigma,'=',50)",parse=T,data=data.frame(n1=25,method="unadjusted",variable="sigma",value=1.25),size=8) +
-                geom_line(data=subset(dfa,variable==levels(variable)[2])) +
+#                    geom_text(label="paste(sigma,'=',50)",parse=T,data=data.frame(n1=25,method="unadjusted",variable="sigma",value=1.25),size=8) +
+#                geom_line(data=subset(dfa,variable==levels(variable)[2])) +
     facet_grid(variable~method,scale='free',labeller=lverbose) +xlab(expression(n[1]))+ylab('')+theme_bw()+xlim(c(2,50))
 print(vplot)
 
@@ -758,7 +867,7 @@ library(bt88.03.704)
 mplot <- mplot+theme(strip.text.y = element_text(size=rel(.8)),axis.text=element_text(size=rel(.6)),plot.margin=unit(c(.7,-.2,-.2,-1),'lines'))
 vplot <- vplot+theme(strip.text.y = element_text(size=rel(.8)),axis.text=element_text(size=rel(.6)),plot.margin=unit(c(.7,-.2,-.2,-1),'lines'))
 cplot <- cplot+theme(strip.text.y = element_text(size=rel(.8)),axis.text=element_text(size=rel(.6)),plot.margin=unit(c(.7,-1,-.2,-1),'lines'),legend.text=element_text(size=rel(.6)))
-setwd('~/Dropbox/msi/2013/research/blind_confidence/rssversion/graphs/')
+setwd('~/repos/overleaf/blind_confidence/graphs/')
 cairo_ps('blinded-max.eps',width=8.5,height=4.4,pointsize=8)
 multiplot(mplot,vplot,cplot,cols=3,widths=unit(c(.3,.3,.4),'npc'),titles = c("Mean bias","Variance bias","Actual - nominal coverage"))
 dev.off()

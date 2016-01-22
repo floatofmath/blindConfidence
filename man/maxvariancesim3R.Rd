@@ -6,7 +6,7 @@
 \format{A \code{data.frame}, each line corresponds to the outcome from
 one simulation run with $10^7$ simulated trials.}
 \description{
-Simulation results from "Estimation after blinded interim analyses"
+Maximum absolute variance simulations with delta = 0.
 
 A dataset containing the very simulation results used
 shown in the article "Estimation after blinded interim

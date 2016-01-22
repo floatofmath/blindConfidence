@@ -7,8 +7,7 @@
 \format{A \code{data.frame}, each line corresponds to the outcome from
 one simulation run with $10^7$ simulated trials.}
 \description{
-Maximum Bias Re-Simulations of variance estimates 
-"Estimation after blinded interim analyses"
+Maximum absolute variance bias found in a neighbourhood around the optimizing values found in \code{\link{maxsim}}.
 
 A dataset containing the very simulation results used
 shown in the article "Estimation after blinded interim
