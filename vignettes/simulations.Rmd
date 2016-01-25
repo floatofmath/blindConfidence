@@ -2,11 +2,12 @@
 title: "Estimation after blinded interim analysis"
 subtitle: "Supplementary Web Materials: Numerical results"
 author: Florian Klinglmueller
-output: rmarkdown::html_vignette
+output: rmarkdown::pdf_document
 vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteIndexEntry{Vignette Title}
   \usepackage[utf8]{inputenc}
+fig_caption: yes
 ---
 
 ```{r knitr options,echo=F}
@@ -37,11 +38,22 @@ In a first simulation study we investigated the coverage probabilities
 of conventional t-test confidence intervals following blinded interim
 analysis, as well as the bias of the estimates of the mean and
 variance. The second stage sample size was computed based on the
-blinded first stage data using either the adjusted or the unadjusted
-variance estimate.  For each stage normally distributed test
+blinded first stage data using either the adjusted 
+
+
+$$
+n^a_2(S^2_{1,OS})=\max\left\{n_{2\min},2(z_{1-\alpha} + z_{1-\beta})^2\left( \frac{S^2_{1,OS}}{\delta_0^2}-\frac{n_1}{4n_1-2}\right)-n_1 \right\}.\label{eq:sssa}
+$$
+
+or the unadjusted
+
+$$
+n^u_2(S^2_{1,OS})=\max\left\{n_{2\min},2(z_{1-\alpha} + z_{1-\beta})^2 \frac{S^2_{1,OS}}{\delta_0^2}-n_1 \right\},\label{eq:ssss}
+$$
+
+reassessment rules.  For each stage normally distributed test
 statistics were generated for a control and a treatment group assuming
 balanced allocation.
-
 
 ```{r libraries}
 ## For running the simulations and plotting the results the following
@@ -161,11 +173,11 @@ gridsim$ylow <- 0
 
 First we show results
 for designs that reassess the sample size based on the adjusted
-interim variance estimate. Negative values correspond to situations
+interim variance estimate $n^a_2$. Negative values correspond to situations
 where the actual coverage is smaller than the nominal coverage. In
 this case the coresponding confidence intervals become liberal. 
 
-### Adjusted interim variance estimate
+### Coverage probability: adjusted interim variance estimate
 
 We plot how far the coverage probabilities of one and two-sided
 confidence intervals deviate from their nominal coverage if sample
@@ -187,11 +199,12 @@ print(tupd)
 ```
 
 
-### Unadjusted interim variance estimate
+### Coverage probability: unadjusted interim variance estimate
 
 
-Then also for designs that use the unadjusted lumped variance at
-interim.
+Next we show the difference between actual and nominal coverage
+probabilities, for designs that use the unadjusted lumped variance at
+interim for sample size reassessment (i.e. $n_2^u$).
 
 
 ```{r CPnU,results='hide',echo=F,warning=F}
@@ -212,10 +225,10 @@ print(tupd.uc)
 
 
 Next we look at estimates of the mean difference between treatment
-groups. Solid lines show the mean bias for designs where sample sizes
-are adjusted based on the adjusted interim variance estimate, dashed
+groups. Solid lines show the bias in the mean estimate for designs where sample sizes
+are adjusted based on the adjusted interim variance estimate ($n^a_2$), dashed
 lines for designs where sample sizes are adjusted based on the
-unadjusted interim variance estimate. The dotted lines show the
+unadjusted interim variance estimate ($n^u_2$). The dotted lines show the
 bias of the mean estimate using a samplesize reassessment rule is used
 in order to maximize the negative or positive bias, respectively.
 
@@ -245,7 +258,14 @@ print(tupd.mean.bias)
 ## Bias of the variance estimate
 
 
-Next we look at variance estimates. 
+Next we show the bias when estimating the variance at the end of the
+adapted trial. Solid lines show the bias of the variance estimate for
+designs where sample sizes are adjusted based on the adjusted interim
+variance estimate ($n^a_2$), dashed lines for designs where sample
+sizes are adjusted based on the unadjusted interim variance estimate
+($n^u_2$). The dotted lines show the bias of the mean estimate using a
+samplesize reassessment rule is used in order to maximize the negative
+or positive bias, respectively. 
 
 ```{r Bias_sigma2,results='hide',echo=F,warning=F}
 tupd.var.bias <- ggplot(gridsim,mapping=aes(x=delta,y=variance.bias)) +
@@ -264,37 +284,26 @@ In each simulated trial we estimated the standard error of the mean,
 and compute the standard error of a fixed sample trial with the same
 final sample size. Finally, we compute the standard deviation of the
 mean estimate across all Monte Carlo samples, which is an unbiased
-estimate of the true standard error of the mean. Figure ? shows the
-results for designs that use the corrected interim variance estimate
-to reassess the sample size; Figure ? shows the results for designs
-that use the unadjusted interim variance estimate. Solid lines show
-the standard deviation of mean estimates across simulated trials,
-dashed lines show the average standard error estimates across
-simulated trials, dotted lines show the average of the true standard
-errors of corresponding fixed sample designs. The true standard error
-of the mean of an adaptive design with blinded sample size
-reassessment is smaller than that of corresponding fixed sample
-design. The bias of the estimate of the standard error is close to
-zero around the null hypothesis.  This holds both for designs using
+estimate of the true standard error of the mean. In the following
+figures solid lines show the standard deviation of mean estimates
+across simulated trials, dashed lines show the average standard error
+estimates across simulated trials, dotted lines show the average of
+the true standard errors of corresponding fixed sample designs. The
+true standard error of the mean of an adaptive design with blinded
+sample size reassessment is smaller than that of corresponding fixed
+sample design. The bias of the estimate of the standard error is close
+to zero around the null hypothesis.  This holds both for designs using
 the adjusted and unadjusted interim variance estimates to reassess the
 sample size. It explains why there is practically no inflation of the
 coverage probability of confidence intervals near the null hypotheses,
-even though the variance estimate has a considerable negative bias.
+even though the variance estimate has a considerable negative
+bias.
 
-An explanation is given in the following figure where we plot the
-standard error of the mean, averaged across all simulated trials; the
-standard error of the mean of a fixed sample desig the standard
-deviation of the mean estimate across all monte-carlo samples
-(i.e. the true standard error of the mean) of a given parameter
-setting (dashed line); the Conditional on the second stage sample size
-the estimate of the standard error is smaller than the standard error
-of a fixed sample design with equal sample size. However the true
-variance of the mean - as estimated from all monte carlo samples - is
-estimated across all simulation runs. This shows that the
-standard error of a fixed sample design with average sample size is
-larger than the standard error of the adaptive design.
 
-### Adjusted interim variance estimate
+### Variance of the mean estimate: adjusted interim variance estimate
+
+First we show the results for simulated trials using the adjusted
+interim variance estimate ($n_2^a$).
 
 ```{r Standard_errors_nA,results='hide',echo=F,warning=F}
 tupd.vm.bias <- ggplot(gridsim,mapping=aes(x=delta,y=vm)) +geom_line(lty=1) +
@@ -309,8 +318,10 @@ print(tupd.vm.bias)
 
 
 
-### Unadjusted interim variance estimate
+### Variance of the mean estimate: unadjusted interim variance estimate
 
+Second we show the results for simulated trials using the adjusted
+interim variance estimate ($n_2^u$).
 
 
 ```{r Standard_errors_nU,results='hide',echo=F,warning=F}
@@ -352,16 +363,38 @@ dev.off()
 
 # Maximum bias of the mean estimate and worst case inflation of the non-coverage 
 
-We also looked at the maximum bias that may be attained (using the
-adjusted sample size reassessment rule) for a given first stage sample
-size. 
+We also maximize the different absolute bias of mean and variance
+estimates as well as the (absolute) difference between actual and
+nominal coverage probabilities over $\delta$ and $\sigma$, for fixed
+first stage sample sizes. As the different quantities can only be
+evaluated with some simulation error, we implemented a three-stage
+optimization procedure.
 
-## Introduction
+1. We evaluate bias, and coverage probabilities using an initial
+   simulation, for all per group first stage sample sizes between 2
+   and 50 over a relatively fine    grid of parameter values $\delta \in [0,4]$ and $\sigma \in
+   [.5,4]$.
+2. For each first stage sample size and quantity (mean bias, variance
+   bias, actual - nominal    coverage probabily) we identify the
+   maximizing parameter settings based on the results of the
+   simulation study in step one.
+   We add additional candidate scenarios in the vicinity of each of
+   the identified parameter settings (in a resolution that is higher
+   then the grid in step 1) and perform another set of simulations
+   (using an increased number of simulation runs).
+3. Again, for each first stage sample size and quantity (mean bias,
+   variance    bias, actual - nominal    coverage probabily) we
+   identify the    maximizing parameter settings based on the results
+   of the simulation study in step two.
+   Finally we run a last set of simulations using the identified
+   scenarios to avoid any selection bias.
 
+In the following Figures we present the results from the final
+simulation run in Step 3. For the bias of the variance we performed
+some additional simulations as our results suggested that the
+optimizing scenarios are given for $\delta=0$ and for the undadjusted
+sample size rule also $\sigma=\infty$.
 
-We simulate adaptive trials for true differences of means between 0
-and 4, true standard deviations between .2 and 4 and (total) first
-stage sample sizes between 4 and 142. 
 
 ```{r parameter grid maximum bias}
 G <- expand.grid(delta=round(seq(0,4,.1),2),
@@ -382,18 +415,18 @@ maxsim <- simulate_batch(G,10^6)
 fname <- paste('maxsim_',Sys.info()['nodename'],'_',format(Sys.time(),"%y%m%d"),'.Rd',sep='')
 save(maxsim,file=fname)
 ```
+## Step 1: Simulation over a grid
 
 
-For each scenario we perform $10^6$ simulation runs.
+We simulate adaptive trials for true differences of means between 0
+and 4, true standard deviations between .5 and 4 (both in steps of
+$.1$) and per group first stage sample sizes between 2 and 50. 
+For each scenario we performed $10^6$ simulation runs.
 
- Initially $10^6$ simulations were performed for a range of true
-  mean  differences $\delta\in[0,4]$ and standard deviations
-  $\sigma\in[.5,4]$ in steps of $0.1$. In a second step the grid was
-  refined in a vicinity of parameter values at which maxima were
-  obtaind   which was subsequently refined
-  in the vicinity of )
+Steps 2 and 3 of the maximizing procedure were then performed for each
+quantity seperately.
 
-## Results
+## Maximum bias of the mean for given $n_1$
 
 
 
@@ -421,10 +454,11 @@ lverbose  <- function(labels,from=c("anc","mmb","mvb"),to=c("non-coverage [%]","
 
 
 ```
-### Maximum bias of the mean
 
 To improve our estimate of the maximum we refine the grid around
-previously simulations and simulate again.
+previously simulations (points every .01 in a cubic vicinity -  with a
+width of .1 - of the maximizing $\delta$ and $\sigma$)and simulate
+again using $4*10^6$ runs. 
 
 ```{r resim_mean,eval=F}
 maxmeanopt1 <- select_results(maxsim,c('mean.bias','uc.mean.bias'),base_columns=c('n1','tn1','delta','sigma','d','s'))
@@ -441,8 +475,8 @@ save(maxmeansim3,file=fname)
 
 ```
 
-Finally we selected the maximal values of the bias and resimulate to
-any selection bias.
+Finally we selected the maximal values of the bias and resimulate
+using $10^7$ runs to remove any selection bias.
 
         
 ```{r,echo=F,results='hide'}
@@ -491,10 +525,12 @@ print(mplot)
 ## relativer bias (constallation die den bias,bzw,type I error, maximiert)
 ```
 
-### Maximum bias of the variance estimate
+## Maximum bias of the variance estimate
 
 To improve our estimate of the maximum we refine the grid around
-previously simulations and simulate again.
+previously simulations (points every .01 in a cubic vicinity -  with a
+width of .1 - of the maximizing $\delta$ and $\sigma$)and simulate
+again using $4*10^6$ runs. 
 
 
 ```{r resim_variance,eval=F}
@@ -514,8 +550,8 @@ save(maxvariancesim3,file=fname)
 
 ```
 
-Finally we select maximum bias values and resimulate to avoid
-selection bias.
+Finally we selected the maximal values of the bias and resimulate
+using $10^7$ runs to remove any selection bias.
 
 
 
@@ -575,7 +611,7 @@ additionally ran the following simulations:
 2. Estimate the absolute variance using simulations setting $\delta=0$
    and $\sigma=4$ (i.e. at the border of the chosen parameter grid)
 3. Estimate the absolute variance using simulations setting $\delta=0$
-   and $\sigma=50$ (i.e. approaching $\Infty$)
+   and $\sigma=50$ (i.e. approaching infinity)
 
 Especially, setting $\sigma=50$ increased the variance of the
 estimated bias quite a bit so that the number of simulation runs had 
@@ -645,7 +681,7 @@ First we show that setting $\delta = 0$ does not decrease the absolute
 variance bias compared to the maximum values found when $\delta$ was allowed
 to range from $0$ to $4$.
 
-```{r,fig.cap="Comparison of maximal absolute variance bias for different parameter settings: Solid line - $\delta=0$, $\sigma \in [.5,4]$; Dashed line - $\delta \in [0,4]$, $\sigma=[.5,4]$; transparent red line - theoretical bound."}
+```{r,fig.cap="Comparison of maximal absolute variance bias for different parameter settings: Solid line - $\\delta=0$, $\\sigma \\in [.5,4]$; Dashed line - $\\delta \\in [0,4]$, $\\sigma=[.5,4]$; transparent red line - theoretical bound."}
 data(maxvariancesimR3)
 data(maxvariancesimR43)
 data(maxvariancesimRL3)
@@ -667,7 +703,7 @@ $4$, but not as much as for $\sigma=50$.
 
 
 
-```{r compare_maxvarbiases_1,echo=F,fig.cap="Comparison of maximal absolute variance bias for different parameter settings: Solid line - $\delta=0$, $\sigma=50$; Dashed line - $\delta=0$, $\sigma=4$; Dotted line $\delta=0, $\sigma \in [.5,4]$; transparent red line - theoretical bound."}
+```{r compare_maxvarbiases_1,echo=F,fig.cap="Comparison of maximal absolute variance bias for different parameter settings: Solid line - $\\delta=0$, $\\sigma=50$; Dashed line - $\\delta=0$, $\\sigma=4$; Dotted line $\\delta=0, $\\sigma \\in [.5,4]$; transparent red line - theoretical bound."}
 ggplot(subset(maxvariancesimRL3,what.max=='uc.variance.bias'),aes(n1,-uc.variance.bias))+geom_line()+
     geom_line(data=subset(maxvariancesimR43,what.max=='uc.variance.bias'),linetype=2) +
             geom_line(data=subset(maxvariancesimR3,what.max=='uc.variance.bias'),linetype=3) +
@@ -681,7 +717,7 @@ variance bias compared to the maximum values found when $\delta$ was allowed
 to range from $0$ to $4$.
 
 
-```{r,echo=F,fig.cap="Comparison of maximal absolute variance bias for different parameter settings: Solid line - $\delta=0$, $\sigma \in [.5,4]$; Dashed line - $\delta \in [0,4]$, $\sigma=[.5,4]$."}
+```{r,echo=F,fig.cap="Comparison of maximal absolute variance bias for different parameter settings: Solid line - $\\delta=0$, $\\sigma \\in [.5,4]$; Dashed line - $\\delta \\in [0,4]$, $\\sigma=[.5,4]$."}
 ggplot(subset(maxvariancesimRL3,what.max=='variance.bias'),aes(n1,-variance.bias))+geom_line()+
     geom_line(data=subset(maxvariancesim3,what.max=='variance.bias'),linetype=2)
 ```
@@ -695,7 +731,7 @@ and $\sigma$ ranged from $.5$ to $4$, but not as much as for
 $\sigma=50$.
 
 
-```{r  compare_maxvarbiases_2,echo=F,fig.cap="Comparison of maximal absolute variance bias for different parameter settings: Solid line - $\delta=0$, $\sigma=50$; Dashed line - $\delta=0$, $\sigma=4$; Dotted line $\delta=0, $\sigma \in [.5,4]$."}
+```{r  compare_maxvarbiases_2,echo=F,fig.cap="Comparison of maximal absolute variance bias for different parameter settings: Solid line - $\\delta=0$, $\\sigma=50$; Dashed line - $\\delta=0$, $\\sigma=4$; Dotted line $\\delta=0, $\\sigma \\in [.5,4]$."}
 ggplot(subset(maxvariancesimRL3,what.max=='variance.bias'),aes(n1,-variance.bias))+geom_line(linetype=3)+
     geom_line(data=subset(maxvariancesimR43,what.max=='variance.bias'),linetype=2)+
         geom_line(data=subset(maxvariancesimR503,what.max=='variance.bias'),linetype=1)
@@ -767,9 +803,11 @@ print(vplot)
 
 ### Maximum difference between nominal and actual coverage probability
 
-
 To improve our estimate of the maximum we refine the grid around
-previously simulations and simulate again.
+previously simulations (points every .005 in a cubic vicinity -  with a
+width of .2 - of the maximizing $\delta$ and $\sigma$)and simulate
+again using $4*10^6$ runs. 
+
 
 
 ```{r resim_coverage,eval=F}
@@ -803,8 +841,9 @@ save(maxcoveragesim3,file=fname)
 
 ```
 
-Finally we select maximum bias values and resimulate to avoid
-selection bias.
+Finally we selected the maximal values of the bias and resimulate
+using $10^7$ runs to remove any selection bias.
+
 
 
 ```{r,echo=F,results='hide'}
@@ -876,21 +915,17 @@ dev.off()
 
 # Case Study
 
-## Introduction
+Finally we reproduce the simulations shown in the case study of our
+paper.
 
-This vignette reruns the simulations shown in the case study of our
-paper. Running the simulations for the case study requires some
-additional packages. Most notably \texttt{bt88.03.704} which can be
-installed from github using \texttt{install\_github} from package
-\texttt{devtools}.
+<!-- Running the simulations for the case study requires some -->
+<!-- additional packages. The next code chunk runs the simulations. This -->
+<!-- may take several of hours to a couple of days depending on the machine -->
+<!-- you run them on. Here with 32 cores and 32GB ram it took about 2 -->
+<!-- hours.   -->
 
-
-The next code chunk runs the simulations. This may take several of
-hours to a couple of days depending on the machine you run them
-on. Here with 32 cores and 32GB ram it took about 2 hours. 
-
-We first set up the parameters from \cite{Kieser03} and then run the
-simulation.
+<!-- We first set up the parameters from \cite{Kieser03} and then run the -->
+<!-- simulation. -->
 
 ```{r parameter setting,echo=F}
 
@@ -905,8 +940,8 @@ s1a <- 5.3
 
 ```
 
-To rerun the simulation the following code chunk needs to be
-reconfigured for evaluation.
+<!-- To rerun the simulation the following code chunk needs to be -->
+<!-- reconfigured for evaluation. -->
 
 ```{r run_case_study,eval=F}
 set.seed(659376)
@@ -943,11 +978,6 @@ save(casesim,file=fname)
 ```
 
 
-
-
-## Case study
-
-
 As an example \cite{Kieser03} present the trial reported in
 \cite{Malsch01}, which is a randomized placebo controlled trial of
 the efficacy of the kava-kava special extract "WS$^{\textregistered}$
@@ -955,7 +985,7 @@ the efficacy of the kava-kava special extract "WS$^{\textregistered}$
 was the change in the Hamilton Anxiety Scale (HAMA) between baseline
 and end of treatment. Assuming a mean difference between treatment and
 control of $\delta_0 = `r d`$ and standard deviation of $\sigma_0
-= 8$ (\ie a variance of $\sigma_0^2=64$) results in a sample size of
+= 8$ (i.e. a variance of $\sigma_0^2=64$) results in a sample size of
 $34$ patients per group to provide a power of $80\%$.
 
 ```{r maximum var.bias,include=F,echo=F}
@@ -1013,7 +1043,7 @@ $`r round(casesim[uc.max.var.bias,uc.variance.bias],2)`$ if the
 true mean effect is $\delta =
 `r round(casesim[uc.max.var.bias,delta],2)`$ and the true
 standard deviation $\sigma =
-`r round(casesim[uc.max.var.bias,sigma],2)`$ (\ie it reaches the
+`r round(casesim[uc.max.var.bias,sigma],2)`$ (i.e. it reaches the
 theoretical boundary within simulation error). For smaller values of
 the true standard deviation the bias is smaller in magnitude. The mean
 bias goes up to
