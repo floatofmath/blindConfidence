@@ -70,6 +70,16 @@ NULL
 #' @name maxmeansim3
 NULL
 
+#' Simulation based maximum of the non-coverage inflation under the null
+#' "Estimation after blinded interim analyses" 
+#'
+#' @template datades
+#'
+#' @format A \code{data.frame}, each line corresponds to the outcome from
+#' one simulation run with $10^7$ simulated trials.
+#' @name nullsim
+NULL
+
 
 #' Maximum Bias Re-Simulations of variance estimates 
 #' "Estimation after blinded interim analyses"
