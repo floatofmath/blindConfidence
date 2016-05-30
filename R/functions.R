@@ -205,6 +205,7 @@ simVBIA <- function(delta, # true effect size
       root.mse=with(sim,sqrt(sum((diffmu-delta)^2)/runs)),
       mean.m1=with(sim,median(m1)),
       min.m1=with(sim,unlist(quantile(m1,.01,na.rm=TRUE))),
+      max.m1=with(sim,max(m1)),
       N10 = with(sim,sum(m1==0)/runs),
 ### uncorrected    
       uc.lower.prob=with(sim,sum({diffmuu-baru}>delta)/runs),
@@ -218,6 +219,7 @@ simVBIA <- function(delta, # true effect size
       uc.root.mse=with(sim,sqrt(sum((diffmuu-delta)^2)/runs)),
       uc.mean.m1=with(sim,median(m1u)),
       uc.min.m1=with(sim,unlist(quantile(m1u,.01,na.rm=TRUE))),
+      uc.max.m1=with(sim,max(m1u)),
       uc.n10 = with(sim,sum(m1==0)/runs),
       tn1 = with(sim,mean(n1))
       )
