@@ -365,34 +365,39 @@ cond.bias <- function(S1os,n1,delta,sigma){
 #'
 #' @param delta true mean difference
 #' @param n1 first stage per group sample size
+#' @param n2max maximum second stage sample size
 #' @param sigma true standard deviation
 #' @param runs number of simulted trials
 #' @return A vector following components:
 #' \item{m.bias}{Maximum positiv mean bias that can be attained for a given parameter setting}
 #' \item{m.bias.n}{Maximum negative mean bias that can be attained}
 #' @export
-simMBIA <- function(delta=0,n1=2,sigma=1,runs=100)
-{
-  ## means, variances group 1 and 2
-  ma=rnorm(runs,0,sigma/sqrt(n1))
-  mb=rnorm(runs,delta,sigma/sqrt(n1))
-  sa=sigma^2*rchisq(runs,n1-1)
-  sb=sigma^2*rchisq(runs,n1-1)
-  ## mean differnce
-  md = mb-ma
-  ## interim variance estimate
-  S1os=(sa+sb+(n1/2)*md^2)/(2*n1-1)
-  ## expected bias
-  biasv=simplify2array(lapply(S1os,cond.bias,n1=n1,delta=delta,sigma=sigma))
-  
-  ## if the expected bias is positive stop otherwise make second stage infinitely large
-  est1=ifelse(biasv>0,md-delta,0)
-  ## otherway around
-  est2=ifelse(biasv<0,md-delta,0)
-  ## stop  always
-  est3=md-delta
-  c(m.bias = mean(est1),
-    m.bias.n = mean(est2))
+simMBIA <- function(delta=0,n1=2,n2max=Inf,sigma=1,runs=100){
+    ## means, variances group 1 and 2
+    ma=rnorm(runs,0,sigma/sqrt(n1))
+    mb=rnorm(runs,delta,sigma/sqrt(n1))
+    sa=sigma^2*rchisq(runs,n1-1)
+    sb=sigma^2*rchisq(runs,n1-1)
+    ## mean differnce
+    md = mb-ma
+    ## interim variance estimate
+    S1os=(sa+sb+(n1/2)*md^2)/(2*n1-1)
+    ## expected bias
+    biasv=simplify2array(lapply(S1os,cond.bias,n1=n1,delta=delta,sigma=sigma))
+    if(n2max < Inf){
+        ## if the expected bias is positive stop otherwise increase to the max
+        est1=ifelse(biasv>0,md-delta,biasv*n1/(n1+n2max))
+        est2=ifelse(biasv<0,md-delta,biasv*n1/(n1+n2max))
+    ## otherway around
+    } else {
+        ## if the expected bias is positive stop otherwise make second stage infinitely large
+        est1=ifelse(biasv>0,md-delta,0)
+        ## otherway around
+        est2=ifenlse(biasv<0,md-delta,0)
+    }
+    est3=md-delta
+    c(m.bias = mean(est1),
+      m.bias.n = mean(est2))
 }
 
 #compMBIA <- function(delta=0,n1=2,sigma=1,runs=100)
