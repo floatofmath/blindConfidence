@@ -84,6 +84,7 @@ zsd <- function(n1,d,v = 1/2,alpha,beta){
 #' @param runs number of simulation runs
 #' @param n2 first stage sample size in control group
 #' @param n2min minimum secondstage sample size
+#' @param n2max maximum secondstage sample size
 #' @param fulldata return full data 
 #' @param cf correction term added to the sample size rule
 #' @template simvbia
@@ -101,6 +102,7 @@ simVBIA <- function(delta, # true effect size
                    runs, # number of simulation runs
                    n2 =n1, # first stage sample size in control group
                    n2min = 0, # minimum secondstage sample size
+                   n2max = Inf, # maximum secondstage sample size
                    fulldata = FALSE, #  
                    cf = 0
                    ){
@@ -142,8 +144,8 @@ simVBIA <- function(delta, # true effect size
 
   ## round of errors!
   ## m1=pmax(round(2*xi*ps)-n1,0)
-  sim$m1 <- with(sim,pmax(ceiling(2*xi*ps)-n1+cf,n2min))
-  sim$m1u <- with(sim, pmax(ceiling(2*xi*psu)-n1+cf,n2min))
+  sim$m1 <- with(sim,pmin(pmax(ceiling(2*xi*ps)-n1+cf,n2min),n2max))
+  sim$m1u <- with(sim,pmin(pmax(ceiling(2*xi*psu)-n1+cf,n2min),n2max))
   sim$ps <- with(sim,NULL)
   sim$psu <- with(sim,NULL)
   ## replace by external values
