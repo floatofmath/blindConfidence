@@ -4,12 +4,14 @@
 \alias{simMBIA}
 \title{Maximum bias of the estimate mean difference following blinded interim analyses}
 \usage{
-simMBIA(delta = 0, n1 = 2, sigma = 1, runs = 100)
+simMBIA(delta = 0, n1 = 2, n2max = Inf, sigma = 1, runs = 100)
 }
 \arguments{
 \item{delta}{true mean difference}
 
 \item{n1}{first stage per group sample size}
+
+\item{n2max}{maximum second stage sample size}
 
 \item{sigma}{true standard deviation}
 

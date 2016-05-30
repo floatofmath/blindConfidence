@@ -44,7 +44,7 @@ mean_bias_plot <- function(gridsim,thmax_bias=TRUE){
         facet_grid(s~sigma,labeller=.lgrid) + theme_bw() +
     xlab(expression(delta)) + ylab('Bias of the mean') #+ ylim(-.4,.4)
     if(thmax_bias) {
-        tupd.mean.bias <- tupd.meanbias +
+        tupd.mean.bias <- tupd.mean.bias +
                     geom_path(aes(y=m.bias),lty=3,col='black',data=subset(gridsim,m.bias<=0.2 & n1 == 2)) +
             geom_path(aes(y=m.bias.n),lty=3,col='black',data=subset(gridsim,m.bias.n>=-0.2 & n1 == 2)) +
             geom_path(aes(y=m.bias),lty=3,col='black',data=subset(gridsim,m.bias<=0.1 & n1 == 8)) +
