@@ -5,7 +5,7 @@
 \title{Simulate estimation after blinded interim analyses}
 \usage{
 simVBIA(delta, sigma, d, n1, alpha = 0.025, beta = 0.2, v = 1/2,
-  s = zsd(n1, d, v, alpha, beta), runs, n2 = n1, n2min = 0,
+  s = zsd(n1, d, v, alpha, beta), runs, n2 = n1, n2min = 0, n2max = Inf,
   fulldata = FALSE, cf = 0)
 }
 \arguments{
@@ -30,6 +30,8 @@ simVBIA(delta, sigma, d, n1, alpha = 0.025, beta = 0.2, v = 1/2,
 \item{n2}{first stage sample size in control group}
 
 \item{n2min}{minimum secondstage sample size}
+
+\item{n2max}{maximum secondstage sample size}
 
 \item{fulldata}{return full data}
 
