@@ -86,7 +86,7 @@ variance_bias_plot <- function(gridsim){
 ##' @return ggplot object
 ##' @author float
 ##' @export
-adjusted_sem_plot <- function(gridsim,adjusted=F){
+sem_plot <- function(gridsim,adjusted=F){
     if(adjusted){
         tupd <- ggplot(gridsim,mapping=aes(x=delta,y=uc.vm)) +
             geom_line(lty=1) + geom_path(aes(y=uc.ev),lty=2) +
