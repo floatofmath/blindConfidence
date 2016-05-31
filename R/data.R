@@ -7,6 +7,16 @@
 #' @name gridsim
 NULL
 
+#' Simulation results from "Estimation after blinded interim analyses" 
+#'
+#' Sample size rules with second stage sample size limited \code{n2max=2*n1}
+#' @template datades
+#' 
+#' @format A \code{data.frame}, each line corresponds to the outcome from
+#' one simulation run with $10^7$ simulated trials.
+#' @name restsim
+NULL
+
 #' Maximum Bias Simulations "Estimation after blinded interim analyses"
 #'
 #' @template datades
