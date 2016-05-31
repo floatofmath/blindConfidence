@@ -524,7 +524,8 @@ set.seed(50014056)
 runs <- 5*10^7
 gridsim <- t(simplify2array(mclapply(1:nrow(G),
                                      function(i) {c(G[i,],
-                                                    simVBIA(delta=G[i,]$delta,
+                                                    simVBIA(n1=G[i,]$n1,
+                                                            delta=G[i,]$delta,
                                                             sigma=G[i,]$sigma,
                                                             d=G[i,]$d,
                                                             s=G[i,]$s,
@@ -765,7 +766,7 @@ save(maxmeansim3,file=fname)
 
 
         
-```{r,echo=F,results='hide'}
+```{r ,echo=F,results='hide'}
 data(maxmeansim3)
 
 max.bias2 <- ddply(maxmeansim3,"n1",transform,
@@ -1057,7 +1058,7 @@ save(maxcoveragesim3,file=fname)
 
 
 
-```{r,echo=F,results='hide'}
+```{r ,echo=F,results='hide'}
 data(maxcoveragesim3)
 
 max.coverage2 <- ddply(maxcoveragesim3,"n1",transform,
@@ -1246,6 +1247,61 @@ print(caseplot)
 dev.off()
 
 ```
+
+## Bias simulations with a maximum sample size
+
+```{r run simulation,eval=FALSE}
+## The next chunk runs the simulations by applying the simulation
+## function, in parallel, across rows of the parameter grid $G$, which
+## contains the parameter settings for each scenario. In order to rerun
+## them it has to be reconfigured for evaluation. Note that running the
+## simulations may take quite long.
+G <- expand.grid(delta=round(seq(-4,4,.1),1),
+                 sigma=round(seq(.5,2,.5),2),
+                 d = 1,
+                 s = round(seq(.5,2,.5),2))
+G$n1 <- ceiling(1/2*zss(G$s,G$d,.025,.2))
+G$n2max <- 2*G$n1
+
+G <- subset(G,n1 < 65 & n1 > 1)
+G <- data.table(G)
+set.seed(693325)
+runs <- 10^7
+restsim <- simulate_batch(G,runs,T,T)
+
+full.sim <- restsim
+
+restsim <- subset(full.sim,d==1 & sigma>=.5 & n1 > 2)
+restsim$ylow <- 0
+
+gsim <- as.data.frame(t(apply(restsim,1,unlist)))
+
+## compute relative bias
+gsim$var.rbias <- gsim$variance.bias/gsim$sigma^2
+
+## compute the theoretical lower bound for the variance bias
+gsim$bound <- lowerBound(gsim$n1,gsim$d)
+
+runs <- 10^5
+bsim <- mclapply2(1:nrow(gsim),function(i) {c(gsim[i,],
+                                             simMBIA(delta=gsim[i,]$delta,
+                                                     sigma=gsim[i,]$sigma,
+                                                     n1=gsim[i,]$n1,
+                                                     n2max=gsim[i,]$n2max,
+                                                     runs=runs))})
+
+bsim <- do.call('cbind',bsim)
+bsim <- as.data.frame(apply(bsim,1,unlist),row.names=NA)
+
+restsim <- bsim
+restsim$brannath <- .4*sqrt(2)*gridsim$sigma/sqrt(gridsim$n1)
+save(restsim,file=bt88.03.704::vfile('restsim'))
+
+```
+
+
 \clearpage
+
+
 
 # References
