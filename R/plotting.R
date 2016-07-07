@@ -22,7 +22,6 @@ plot_coverage <- function(gridsim,adjusted=F){
     }
     tupd <- tupd + facet_grid(s~sigma,labeller=.lgrid,scales="free_y") + theme_bw() + #ylim(-.025,.01) +
         xlab(expression(delta)) + ylab('Actual - nominal coverage [%]')
-    print(tupd)
     return(tupd)
 }
 
@@ -54,7 +53,6 @@ mean_bias_plot <- function(gridsim,thmax_bias=TRUE){
             geom_path(aes(y=m.bias),lty=3,col='black',data=subset(gridsim,m.bias<=0.1 & n1 == 32)) +
             geom_path(aes(y=m.bias.n),lty=3,col='black',data=subset(gridsim,m.bias.n>=-0.1 & n1 == 32))
     }
-    print(tupd.mean.bias)
     tupd.mean.bias
 }
 
@@ -73,7 +71,6 @@ variance_bias_plot <- function(gridsim){
     geom_path(lty=2) + geom_path(aes(y=uc.variance.bias),lty=1) +
     facet_grid(s~sigma,labeller=.lgrid) + theme_bw() + #ylim(-0.3,0.1) +
     xlab(expression(delta)) + ylab('Bias of the variance')
-    print(tupd.var.bias)
     tupd.var.bias
 }
 
@@ -101,7 +98,6 @@ sem_plot <- function(gridsim,adjusted=F){
         geom_blank(aes(x=delta,y=ylow)) +
         ylab('Variance of the mean estimate')+
         facet_grid(s~sigma,labeller=.lgrid) 
-    print(tupd)
     tupd
 }
 

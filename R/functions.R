@@ -26,6 +26,31 @@
 #' @import data.table 
 NULL
 
+##' @title Sample size reassessment rules
+##' @param S1OS interim estimate of the standard deviation
+##' @param delta0 assumed effect size
+##' @param n1 first-stage sample size
+##' @param n2min minimum second-stage sample size
+##' @param n2max maximum second-stage sample size
+##' @param cf correction facton 
+##' @param alpha significance level (one-sided) 
+##' @param beta targeted Type II error rate
+##' @param adj should the adjusted rule be used
+##' @return adjusted second-stage sample size
+##' @examples
+##' ## Example from Kieser et al. (2003)
+##' n1 = 15
+##' S1OS = 6
+##' delta0 = 5.5
+##' n2r(S1OS,delta0,n1)
+##' n2r(S1OS,delta0,n1,adj=T)
+##' @author Florian Klinglmueller
+##' @export
+n2r <- function(S1OS,delta0,n1,adj=FALSE,n2min=0,n2max=Inf,cf=1,alpha=.025,beta=.2){
+    pmin(n2max,pmax(n2min,2*(qnorm(alpha,lower.tail=FALSE)+qnorm(beta,lower.tail=FALSE))^2*((S1OS/delta0)^2 - adj*(n1/(4*n1-2)))-n1+cf))
+}
+
+
 #' Compute sample size of z-test
 #'
 #' \code{zss} computes per-group the sample size for the z-test
