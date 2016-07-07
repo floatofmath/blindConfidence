@@ -44,13 +44,14 @@ as in this document can be replicated by compiling the corresponding
 source file in the package. Simply compiling the document - as happens
 on installation of the package - will recompute all figures using
 stored simulation results. To rerun the simulations the corresponding
-R chunks can be reconfigured so that they will be evaluated on
-compilation. Note that this may take a very long time and require a
-considerable amount of main memory. Computation of the publication
-results took over two weeks on a simulation server with $40$ processor
-cores and 64 GB of shared memory. Note that the code has been
-optimized to run on Linux, so while the package should work fine on
-Windows in theory, it has not been tested.
+R chunks can be reconfigured by setting \texttt{eval=TRUE} so that
+they will be evaluated on compilation. Note that this may take a very
+long time and require a considerable amount of main
+memory. Computation of the publication results took over two weeks on
+a simulation server with $40$ processor cores and 64 GB of shared
+memory. Note that the code has been optimized to run on Linux, so
+while the package should work fine on Windows in theory, it has not
+been tested.
 
 In Section 1 we outline the setup and reproduce the results of the
 simulation study presented in Section 4 of the article. Additionally
@@ -78,7 +79,7 @@ article combines three figures from this document into one panel.
 
 ```{r ,results="show"}
 figure_table <- data.frame("Article Figure"=paste('Figure',c(1,2,3,4,5)),
-                           "Supplemental Figure"=paste('Figure',c(3,4,2,"7, 13, 14",16)))
+                           "Supplementary Figure"=paste('Figure',c(3,4,2,"7, 13, 14",16)))
                            
 pander(figure_table)
 ```
@@ -102,9 +103,15 @@ $$
 n^u_2(S^2_{1,OS})=\min\left\{\nmax,\max\left\{n_{2\min},2(z_{1-\alpha} + z_{1-\beta})^2 \frac{S^2_{1,OS}}{\delta_0^2}-n_1+1 \right\}\right\},\label{eq:ssss}
 $$
 
-reassessment rules. For each stage normally distributed test
-statistics were generated for a control and a treatment group assuming
-balanced allocation.
+reassessment rules.
+
+To optimize the computational efficiency of the simulation algorithm,
+the joint distribution of the  stage-wise t-statistics was simulated by
+sampling the stage-wise means and sample variances from independent
+normal and chi-squared distributions (instead of sampling individual
+observations). After submission of our manuscript we became aware of a
+paper by \cite{lu2016distribution} on sample size reassessment for non-inferiority
+trials, where the same approach is proposed.
 
 We assume that the preplanned sample size of the trial was planned to
 reach a target power of 80% (using the normal approximation) assuming
@@ -531,7 +538,7 @@ reduced. This is not surprising as for $\sigma_0 << \sigma$ the
 adjusted second stage sample size is essentially fixed at $\nmax$
 resulting in unbiased estimates and correct coverage
 probabilities. Note, however, that the corresponding trials will not
-control of the Type II error at the desired level anymore. This can
+control the Type II error at the desired level anymore. This can
 also be seen as the variance of the mean estimate (Figures
 \ref{fig:rest.varmeanBias} and \ref{fig:rest.uc.varmeanBias}) is
 substantially larger in these cases and does not decrease for
